@@ -1,0 +1,446 @@
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 6971.65it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 5835.38it/s]
+  ✅ Reranker загружен: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+Загружено 300 тестовых пар из fkn_qa_test_all.md
+
+============================================================
+  RAG Evaluation — 300 вопросов
+  LLM generation: OFF (только retrieval)
+============================================================
+
+Строю индекс ChromaDB (без тестового файла)...
+  ⏭  fkn_qa_test (1): пропускаю (тестовый файл)
+  ⏭  fkn_qa_test_100: пропускаю (тестовый файл)
+  ⏭  fkn_qa_test_200: пропускаю (тестовый файл)
+  ⏭  fkn_qa_test_300: пропускаю (тестовый файл)
+  ⏭  fkn_qa_test_all: пропускаю (тестовый файл)
+  📄 fkn_academic_process_rag: 14 чанков
+  📄 fkn_achievements_rag: 11 чанков
+  📄 fkn_contract_rag: 13 чанков
+  📄 fkn_discounts_rag: 10 чанков
+  📄 fkn_dormitory_rag: 10 чанков
+  📄 fkn_foreign_rag: 9 чанков
+  📄 fkn_military_rag: 9 чанков
+  📄 fkn_ovz_rag: 11 чанков
+  📄 fkn_programs_rag: 42 чанков
+  📄 fkn_summary_rag: 14 чанков
+  📄 fkn_timeline_rag: 9 чанков
+  📄 fkn_tuition_rag: 5 чанков
+  📄 ЧАТ_ФКН_2025: 54 чанков
+Индекс готов: 211 чанков
+
+  ✅ Q01 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.62  src=fkn_programs_rag
+  ✅ Q02 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.80  src=fkn_programs_rag
+  ✅ Q03 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.87  src=fkn_programs_rag
+  ✅ Q04 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.29  src=fkn_ovz_rag
+  ✅ Q05 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.89  src=fkn_programs_rag
+  ✅ Q06 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.64  src=fkn_achievements_rag
+  ✅ Q07 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.44  src=fkn_achievements_rag
+  ⚡ Q08 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.59  src=ЧАТ_ФКН_2025
+  ✅ Q09 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.59  src=fkn_foreign_rag
+  ✅ Q10 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.89  src=fkn_timeline_rag
+  ✅ Q11 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.29  src=fkn_achievements_rag
+  ✅ Q12 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.63  src=fkn_summary_rag
+  ✅ Q13 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.52  src=fkn_summary_rag
+  ✅ Q14 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.69  src=fkn_programs_rag
+  ✅ Q15 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.61  src=fkn_programs_rag
+  ❌ Q16 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.06  src=fkn_military_rag
+  ✅ Q17 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_timeline_rag
+  ⚡ Q18 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.80  src=fkn_programs_rag
+  ⚡ Q19 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.73  src=fkn_summary_rag
+  ⚡ Q20 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.57  src=fkn_programs_rag
+  ✅ Q21 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.81  src=fkn_summary_rag
+  ✅ Q22 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.81  src=fkn_programs_rag
+  ✅ Q23 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.85  src=fkn_summary_rag
+  ✅ Q24 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.79  src=fkn_summary_rag
+  ✅ Q25 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.65  src=fkn_summary_rag
+  ✅ Q26 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.77  src=fkn_summary_rag
+  ✅ Q27 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.57  src=fkn_achievements_rag
+  ✅ Q28 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.88  src=fkn_achievements_rag
+  ✅ Q29 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.35  src=fkn_achievements_rag
+  ⚡ Q30 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.39  src=fkn_programs_rag
+  ✅ Q31 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.39  src=fkn_achievements_rag
+  ✅ Q32 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.61  src=fkn_achievements_rag
+  ✅ Q33 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.53  src=fkn_achievements_rag
+  ✅ Q34 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.40  src=fkn_achievements_rag
+  ❌ Q35 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.39  src=fkn_achievements_rag
+  ✅ Q36 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.93  src=fkn_timeline_rag
+  ✅ Q37 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.73  src=ЧАТ_ФКН_2025
+  ❌ Q38 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.24  src=fkn_timeline_rag
+  ✅ Q39 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.87  src=fkn_timeline_rag
+  ⚡ Q40 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.85  src=ЧАТ_ФКН_2025
+  ✅ Q41 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.87  src=ЧАТ_ФКН_2025
+  ✅ Q42 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.53  src=fkn_summary_rag
+  ⚡ Q43 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.61  src=ЧАТ_ФКН_2025
+  ✅ Q44 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.59  src=fkn_timeline_rag
+  ✅ Q45 [clarification] H@1=1 H@3=1 H@5=1 recall=0.59  src=fkn_timeline_rag
+  ✅ Q46 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.31  src=fkn_ovz_rag
+  ✅ Q47 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.83  src=fkn_foreign_rag
+  ✅ Q48 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.73  src=fkn_foreign_rag
+  ✅ Q49 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.44  src=fkn_foreign_rag
+  ✅ Q50 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.83  src=fkn_ovz_rag
+  ❌ Q51 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.23  src=fkn_ovz_rag
+  ❌ Q52 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.18  src=fkn_ovz_rag
+  ✅ Q53 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.91  src=fkn_foreign_rag
+  ✅ Q54 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.81  src=fkn_ovz_rag
+  ✅ Q55 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_ovz_rag
+  ⚡ Q56 [blocked     ] H@1=0 H@3=1 H@5=1 recall=0.33  src=fkn_summary_rag
+  ❌ Q57 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  ❌ Q58 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ❌ Q59 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ❌ Q60 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=ЧАТ_ФКН_2025
+  ❌ Q61 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  ✅ Q62 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.33  src=fkn_summary_rag
+  ✅ Q63 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.33  src=fkn_academic_process_rag
+  ❌ Q64 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_achievements_rag
+  ❌ Q65 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_contract_rag
+  ❌ Q66 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ❌ Q67 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.00  src=fkn_programs_rag
+  ❌ Q68 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  ❌ Q69 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  ❌ Q70 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.11  src=fkn_contract_rag
+  ❌ Q71 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.11  src=fkn_dormitory_rag
+  ⚡ Q72 [blocked     ] H@1=0 H@3=1 H@5=1 recall=0.33  src=fkn_programs_rag
+  ❌ Q73 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_dormitory_rag
+  ❌ Q74 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ❌ Q75 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  🔶 Q76 [blocked     ] H@1=0 H@3=0 H@5=1 recall=0.39  src=fkn_summary_rag
+  ❌ Q77 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.39  src=fkn_academic_process_rag
+  ❌ Q78 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=ЧАТ_ФКН_2025
+  ❌ Q79 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.06  src=fkn_programs_rag
+  🔶 Q80 [blocked     ] H@1=0 H@3=0 H@5=1 recall=0.39  src=fkn_military_rag
+  ❌ Q81 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.28  src=fkn_ovz_rag
+  ❌ Q82 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=ЧАТ_ФКН_2025
+  ❌ Q83 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_programs_rag
+  ❌ Q84 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.00  src=fkn_programs_rag
+  ❌ Q85 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.00  src=ЧАТ_ФКН_2025
+  ✅ Q86 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_summary_rag
+  ❌ Q87 [clarification] H@1=0 H@3=0 H@5=0 recall=0.21  src=fkn_summary_rag
+  ✅ Q88 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.47  src=fkn_achievements_rag
+  ✅ Q89 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.58  src=fkn_summary_rag
+  ✅ Q90 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.79  src=fkn_summary_rag
+  ✅ Q91 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.65  src=fkn_summary_rag
+  ✅ Q92 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.61  src=fkn_summary_rag
+  ✅ Q93 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.64  src=fkn_summary_rag
+  ✅ Q94 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.33  src=fkn_foreign_rag
+  ⚡ Q95 [clarification] H@1=0 H@3=1 H@5=1 recall=0.42  src=ЧАТ_ФКН_2025
+  ✅ Q96 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_programs_rag
+  ✅ Q97 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.62  src=fkn_summary_rag
+  ⚡ Q98 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.87  src=fkn_programs_rag
+  ✅ Q99 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_summary_rag
+  ⚡ Q100 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.30  src=fkn_timeline_rag
+  ✅ Q101 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.86  src=fkn_contract_rag
+  ✅ Q102 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.88  src=fkn_contract_rag
+  ✅ Q103 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.91  src=fkn_contract_rag
+  ✅ Q104 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_contract_rag
+  ✅ Q105 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.93  src=fkn_contract_rag
+  ✅ Q106 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.96  src=fkn_contract_rag
+  ✅ Q107 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.95  src=fkn_contract_rag
+  ✅ Q108 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_contract_rag
+  ✅ Q109 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_contract_rag
+  ✅ Q110 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.88  src=fkn_contract_rag
+  ✅ Q111 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.82  src=fkn_contract_rag
+  ✅ Q112 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_contract_rag
+  ⚡ Q113 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.45  src=fkn_summary_rag
+  🔶 Q114 [rag         ] H@1=0 H@3=0 H@5=1 recall=0.33  src=fkn_contract_rag
+  ✅ Q115 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.89  src=fkn_contract_rag
+  ⚡ Q116 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.79  src=fkn_summary_rag
+  ✅ Q117 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.36  src=fkn_achievements_rag
+  ✅ Q118 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_achievements_rag
+  ✅ Q119 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.84  src=fkn_achievements_rag
+  ❌ Q120 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.13  src=ЧАТ_ФКН_2025
+  ✅ Q121 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.91  src=fkn_achievements_rag
+  ❌ Q122 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.30  src=fkn_programs_rag
+  ❌ Q123 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.24  src=fkn_programs_rag
+  ❌ Q124 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.15  src=fkn_achievements_rag
+  ✅ Q125 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.63  src=fkn_achievements_rag
+  ❌ Q126 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.17  src=fkn_programs_rag
+  ✅ Q127 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.56  src=fkn_achievements_rag
+  ✅ Q128 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.91  src=fkn_summary_rag
+  ✅ Q129 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_summary_rag
+  ✅ Q130 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.89  src=fkn_summary_rag
+  ⚡ Q131 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.64  src=fkn_ovz_rag
+  ✅ Q132 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.94  src=fkn_ovz_rag
+  ✅ Q133 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.87  src=fkn_ovz_rag
+  ✅ Q134 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_ovz_rag
+  ✅ Q135 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.90  src=fkn_ovz_rag
+  ✅ Q136 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.95  src=fkn_ovz_rag
+  ✅ Q137 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_ovz_rag
+  ✅ Q138 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_ovz_rag
+  ✅ Q139 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_ovz_rag
+  ✅ Q140 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.73  src=fkn_ovz_rag
+  ✅ Q141 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.44  src=fkn_foreign_rag
+  ❌ Q142 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.26  src=fkn_foreign_rag
+  ✅ Q143 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.93  src=fkn_foreign_rag
+  ✅ Q144 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.60  src=fkn_foreign_rag
+  ✅ Q145 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.60  src=fkn_foreign_rag
+  ✅ Q146 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_foreign_rag
+  ✅ Q147 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.40  src=fkn_foreign_rag
+  ❌ Q148 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_foreign_rag
+  ✅ Q149 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_foreign_rag
+  ✅ Q150 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.46  src=fkn_foreign_rag
+  ✅ Q151 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.83  src=fkn_programs_rag
+  ✅ Q152 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.77  src=fkn_programs_rag
+  ✅ Q153 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_programs_rag
+  ✅ Q154 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.93  src=fkn_programs_rag
+  ✅ Q155 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.47  src=fkn_summary_rag
+  ✅ Q156 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.86  src=fkn_programs_rag
+  ✅ Q157 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_summary_rag
+  ✅ Q158 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.81  src=fkn_summary_rag
+  ✅ Q159 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.68  src=fkn_programs_rag
+  ✅ Q160 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.86  src=fkn_programs_rag
+  ❌ Q161 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.20  src=fkn_summary_rag
+  ✅ Q162 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_summary_rag
+  ✅ Q163 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.96  src=fkn_summary_rag
+  ✅ Q164 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.78  src=fkn_summary_rag
+  ✅ Q165 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.81  src=fkn_programs_rag
+  ✅ Q166 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.70  src=fkn_summary_rag
+  ✅ Q167 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.71  src=fkn_summary_rag
+  ✅ Q168 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.54  src=fkn_contract_rag
+  ✅ Q169 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.58  src=fkn_achievements_rag
+  ✅ Q170 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_achievements_rag
+  ✅ Q171 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.73  src=fkn_contract_rag
+  ✅ Q172 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.57  src=fkn_contract_rag
+  ⚡ Q173 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.95  src=fkn_programs_rag
+  ⚡ Q174 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.39  src=fkn_programs_rag
+  ❌ Q175 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_summary_rag
+  ❌ Q176 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_ovz_rag
+  ❌ Q177 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ❌ Q178 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.11  src=fkn_ovz_rag
+  ❌ Q179 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ❌ Q180 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  ❌ Q181 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_ovz_rag
+  ❌ Q182 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_discounts_rag
+  ⚡ Q183 [blocked     ] H@1=0 H@3=1 H@5=1 recall=0.33  src=fkn_academic_process_rag
+  ❌ Q184 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_summary_rag
+  ⚡ Q185 [blocked     ] H@1=0 H@3=1 H@5=1 recall=0.40  src=ЧАТ_ФКН_2025
+  ✅ Q186 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.40  src=fkn_timeline_rag
+  🔶 Q187 [blocked     ] H@1=0 H@3=0 H@5=1 recall=0.30  src=fkn_military_rag
+  ✅ Q188 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.40  src=fkn_programs_rag
+  ⚡ Q189 [blocked     ] H@1=0 H@3=1 H@5=1 recall=0.40  src=ЧАТ_ФКН_2025
+  ❌ Q190 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.10  src=ЧАТ_ФКН_2025
+  ✅ Q191 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_programs_rag
+  ❌ Q192 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_programs_rag
+  ✅ Q193 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.83  src=fkn_contract_rag
+  ⚡ Q194 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.76  src=fkn_achievements_rag
+  ✅ Q195 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_timeline_rag
+  ⚡ Q196 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.57  src=fkn_academic_process_rag
+  ⚡ Q197 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.30  src=fkn_programs_rag
+  ✅ Q198 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.65  src=fkn_ovz_rag
+  ✅ Q199 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_achievements_rag
+  ✅ Q200 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_foreign_rag
+  ✅ Q201 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_tuition_rag
+  ✅ Q202 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.93  src=fkn_tuition_rag
+  ✅ Q203 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_tuition_rag
+  ✅ Q204 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.55  src=fkn_programs_rag
+  ✅ Q205 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_tuition_rag
+  ✅ Q206 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.80  src=fkn_tuition_rag
+  ✅ Q207 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.80  src=fkn_tuition_rag
+  ✅ Q208 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_tuition_rag
+  ✅ Q209 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_contract_rag
+  ✅ Q210 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.73  src=fkn_tuition_rag
+  ✅ Q211 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.71  src=fkn_tuition_rag
+  ✅ Q212 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.88  src=fkn_programs_rag
+  ✅ Q213 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.60  src=fkn_programs_rag
+  ✅ Q214 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.82  src=fkn_discounts_rag
+  ✅ Q215 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.85  src=fkn_discounts_rag
+  ✅ Q216 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_discounts_rag
+  🔶 Q217 [rag         ] H@1=0 H@3=0 H@5=1 recall=0.88  src=fkn_achievements_rag
+  ✅ Q218 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.87  src=fkn_discounts_rag
+  ⚡ Q219 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.81  src=fkn_discounts_rag
+  ✅ Q220 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_discounts_rag
+  ✅ Q221 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_discounts_rag
+  ⚡ Q222 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.88  src=fkn_discounts_rag
+  ✅ Q223 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.89  src=fkn_discounts_rag
+  ✅ Q224 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.78  src=fkn_discounts_rag
+  ✅ Q225 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.77  src=fkn_dormitory_rag
+  ✅ Q226 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.83  src=fkn_dormitory_rag
+  🔶 Q227 [faq-fuzzy   ] H@1=0 H@3=0 H@5=1 recall=0.35  src=ЧАТ_ФКН_2025
+  🔶 Q228 [faq-hash    ] H@1=0 H@3=0 H@5=1 recall=0.48  src=ЧАТ_ФКН_2025
+  ✅ Q229 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_dormitory_rag
+  ✅ Q230 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.71  src=fkn_dormitory_rag
+  ✅ Q231 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.94  src=fkn_dormitory_rag
+  ✅ Q232 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.95  src=fkn_dormitory_rag
+  ✅ Q233 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_dormitory_rag
+  ✅ Q234 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.92  src=fkn_dormitory_rag
+  ⚡ Q235 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.33  src=fkn_programs_rag
+  ⚡ Q236 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.80  src=fkn_academic_process_rag
+  ✅ Q237 [clarification] H@1=1 H@3=1 H@5=1 recall=0.95  src=fkn_dormitory_rag
+  ✅ Q238 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.86  src=fkn_dormitory_rag
+  ✅ Q239 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.90  src=fkn_military_rag
+  ✅ Q240 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_military_rag
+  ✅ Q241 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.93  src=fkn_military_rag
+  ✅ Q242 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.88  src=fkn_military_rag
+  ✅ Q243 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.64  src=fkn_military_rag
+  ✅ Q244 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.83  src=fkn_military_rag
+  ✅ Q245 [clarification] H@1=1 H@3=1 H@5=1 recall=0.90  src=fkn_military_rag
+  ✅ Q246 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_military_rag
+  ✅ Q247 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.80  src=fkn_military_rag
+  ✅ Q248 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_military_rag
+  ✅ Q249 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.92  src=fkn_military_rag
+  ✅ Q250 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.81  src=fkn_academic_process_rag
+  ✅ Q251 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_academic_process_rag
+  ✅ Q252 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.86  src=fkn_academic_process_rag
+  ✅ Q253 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.62  src=fkn_academic_process_rag
+  ✅ Q254 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.86  src=fkn_academic_process_rag
+  ✅ Q255 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.84  src=fkn_academic_process_rag
+  ✅ Q256 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.89  src=fkn_academic_process_rag
+  ✅ Q257 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.94  src=fkn_academic_process_rag
+  ✅ Q258 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_academic_process_rag
+  ✅ Q259 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.95  src=fkn_academic_process_rag
+  ✅ Q260 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.65  src=fkn_academic_process_rag
+  ✅ Q261 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.95  src=fkn_academic_process_rag
+  ✅ Q262 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.57  src=fkn_academic_process_rag
+  ✅ Q263 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.87  src=fkn_summary_rag
+  ✅ Q264 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.44  src=fkn_academic_process_rag
+  ✅ Q265 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.30  src=fkn_academic_process_rag
+  ✅ Q266 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.38  src=fkn_academic_process_rag
+  ✅ Q267 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_academic_process_rag
+  ✅ Q268 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.36  src=fkn_academic_process_rag
+  ✅ Q269 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.82  src=fkn_summary_rag
+  ✅ Q270 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.45  src=fkn_dormitory_rag
+  ✅ Q271 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.52  src=fkn_academic_process_rag
+  ✅ Q272 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.64  src=fkn_military_rag
+  ✅ Q273 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.80  src=fkn_tuition_rag
+  ⚡ Q274 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.78  src=fkn_academic_process_rag
+  ✅ Q275 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_discounts_rag
+  ❌ Q276 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_tuition_rag
+  ❌ Q277 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_dormitory_rag
+  ❌ Q278 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_programs_rag
+  ❌ Q279 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.33  src=fkn_achievements_rag
+  ❌ Q280 [blocked     ] H@1=0 H@3=0 H@5=0 recall=0.22  src=fkn_achievements_rag
+  ✅ Q281 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.30  src=fkn_programs_rag
+  ✅ Q282 [blocked     ] H@1=1 H@3=1 H@5=1 recall=0.30  src=fkn_programs_rag
+  ⚡ Q283 [blocked     ] H@1=0 H@3=1 H@5=1 recall=0.30  src=fkn_ovz_rag
+  🔶 Q284 [blocked     ] H@1=0 H@3=0 H@5=1 recall=0.40  src=ЧАТ_ФКН_2025
+  ✅ Q285 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.58  src=ЧАТ_ФКН_2025
+  🔶 Q286 [rag         ] H@1=0 H@3=0 H@5=1 recall=0.52  src=fkn_programs_rag
+  ⚡ Q287 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.30  src=fkn_academic_process_rag
+  ✅ Q288 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.61  src=fkn_academic_process_rag
+  ✅ Q289 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.34  src=fkn_military_rag
+  ✅ Q290 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_discounts_rag
+  ⚡ Q291 [rag         ] H@1=0 H@3=1 H@5=1 recall=0.62  src=fkn_discounts_rag
+  ✅ Q292 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.30  src=fkn_discounts_rag
+  ✅ Q293 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.67  src=fkn_military_rag
+  ✅ Q294 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.50  src=fkn_dormitory_rag
+  ✅ Q295 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.26  src=fkn_discounts_rag
+  ✅ Q296 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_contract_rag
+  ✅ Q297 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.75  src=fkn_achievements_rag
+  ✅ Q298 [rag         ] H@1=1 H@3=1 H@5=1 recall=0.70  src=fkn_summary_rag
+  ✅ Q299 [rag         ] H@1=1 H@3=1 H@5=1 recall=1.00  src=fkn_summary_rag
+  ❌ Q300 [rag         ] H@1=0 H@3=0 H@5=0 recall=0.12  src=fkn_tuition_rag
+
+============================================================
+  ИТОГОВЫЕ МЕТРИКИ
+============================================================
+  Всего вопросов:        300
+  Маршруты:
+    rag                 : 237
+    blocked             : 56
+    clarification       : 5
+    faq-fuzzy           : 1
+    faq-hash            : 1
+
+  Retrieval (только RAG, n=237):
+    Hit@1:  195/237 = 82.3%
+    Hit@3:  219/237 = 92.4%
+    Hit@5:  222/237 = 93.7%
+    MRR@5:  0.870  (среднее 1/rank первого релевантного чанка)
+    P@3:    54.6%  (доля релевантных среди top-3)
+    P@5:    42.4%  (доля релевантных среди top-5)
+    Context recall >= 0.5: 191/237 = 80.6%
+  Context recall >= 0.5 (все вопросы): 195/300 = 65.0%
+
+  ❌ Полный промах hit@5=0 (15 шт.):
+    Q16 recall=0.06  src=fkn_military_rag
+      Q: вышка принимает с физрой и инфой на что-нибудь?
+    Q35 recall=0.39  src=fkn_achievements_rag
+      Q: сколько лет назад должно быть достижение чтобы его засчитали
+    Q38 recall=0.23  src=fkn_timeline_rag
+      Q: конкурсные списки когда появятся?
+    Q51 recall=0.23  src=fkn_ovz_rag
+      Q: у меня ДЦП — мне дадут ассистента на вступительных?
+    Q52 recall=0.18  src=fkn_ovz_rag
+      Q: нужна ли справка об инвалидности при поступлении?
+    Q120 recall=0.13  src=ЧАТ_ФКН_2025
+      Q: Дают ли баллы за победу в Абилимпикс?
+    Q122 recall=0.30  src=fkn_programs_rag
+      Q: Какие специальные конкурсы дают дополнительные баллы на программу ЭАД?
+    Q123 recall=0.24  src=fkn_programs_rag
+      Q: Дает ли конкурс «Высший пилотаж» баллы на ПМИ?
+    Q124 recall=0.15  src=fkn_achievements_rag
+      Q: Сколько баллов даёт олимпиада PROD на программу Программная инженерия?
+    Q126 recall=0.17  src=fkn_programs_rag
+      Q: Какие конкурсы дают баллы на программу ДРИП (Дизайн и разработка информационных продуктов)?
+    Q142 recall=0.26  src=fkn_foreign_rag
+      Q: Какой минимальный балл по математике нужен иностранцу для поступления на ПМИ?
+    Q148 recall=0.33  src=fkn_foreign_rag
+      Q: Иностранец поступает на Экономику и анализ данных — какой минимум по русскому?
+    Q161 recall=0.20  src=fkn_summary_rag
+      Q: Могу ли я подать заявления на ПМИ и Программную инженерию одновременно?
+    Q192 recall=0.33  src=fkn_programs_rag
+      Q: Хочу поступить на ПМИ, у меня аттестат с отличием, победа в Лицее Яндекса и 90 баллов по математике и информатике. Сколько баллов у меня суммарно?
+    Q300 recall=0.12  src=fkn_tuition_rag
+      Q: Я поступаю на ПМИ платно. Стоимость миллион в год — можно ли как-то снизить? Какие варианты?
+
+  🔶 Найдено в top3-5, но не в top1 (27 шт.):
+    Q08 H@1=0 H@3=1 H@5=1  Q: Предусмотрена ли подача документов через портал «Госуслуги»?
+    Q18 H@1=0 H@3=1 H@5=1  Q: дрип это с тиньком чтоли? там вообще нормально?
+    Q19 H@1=0 H@3=1 H@5=1  Q: я набрал 270 баллов суммарно — куда реально поступить на бюджет?
+    Q20 H@1=0 H@3=1 H@5=1  Q: на эад идут эконом или айтишники
+    Q30 H@1=0 H@3=1 H@5=1  Q: мшп конкурс что это и сколько даёт?
+    Q40 H@1=0 H@3=1 H@5=1  Q: можно ли подать документы через почту?
+    Q43 H@1=0 H@3=1 H@5=1  Q: нужно ли лично приезжать подавать документы или можно онлайн?
+    Q98 H@1=0 H@3=1 H@5=1  Q: программа разработки игр — это реально или просто маркетинг?
+    Q100 H@1=0 H@3=1 H@5=1  Q: я победитель конкурса абитуриентов фкн — нужно ли мне всё равно сдавать егэ?
+    Q113 H@1=0 H@3=1 H@5=1  Q: Как перейти с платного места на бюджет — что происходит с договором?
+    Q114 H@1=0 H@3=0 H@5=1  Q: Может ли организация (работодатель) оплатить моё обучение в ВШЭ?
+    Q116 H@1=0 H@3=1 H@5=1  Q: Сколько баллов дают за аттестат с отличием при поступлении на ФКН?
+    Q131 H@1=0 H@3=1 H@5=1  Q: Как слепому абитуриенту сдать вступительные испытания в ВШЭ?
+    Q173 H@1=0 H@3=1 H@5=1  Q: матка (маткап) прокатит для оплаты учёбы на фкн?
+    Q174 H@1=0 H@3=1 H@5=1  Q: я глухой, как мне сдавать впишки дистанционно?
+    Q194 H@1=0 H@3=1 H@5=1  Q: У меня есть золотой ГТО прошлого года и 80 часов волонтёрства — сколько баллов я получу за достижения?
+    Q196 H@1=0 H@3=1 H@5=1  Q: Если у меня нарушение слуха, мне нужно заранее куда-то обращаться или достаточно отметить в заявлении?
+    Q197 H@1=0 H@3=1 H@5=1  Q: Хочу поступить на ЭАД. У меня обществознание 80, математика 75, русский 70. Прохожу ли я по минимуму и на что ещё могу подать?
+    Q217 H@1=0 H@3=0 H@5=1  Q: Можно ли получить сразу две скидки?
+    Q219 H@1=0 H@3=1 H@5=1  Q: Дают ли скидки на полностью платных программах без бюджета?
+    Q222 H@1=0 H@3=1 H@5=1  Q: Условия скидки для иностранных студентов отличаются от российских?
+    Q235 H@1=0 H@3=1 H@5=1  Q: бро, можно ли на онлайн кнад получить общагу?
+    Q236 H@1=0 H@3=1 H@5=1  Q: я вышел из академки — дадут ли мне снова общагу?
+    Q274 H@1=0 H@3=1 H@5=1  Q: поставили замечание за соп — потеряю ли стипендию?
+    Q286 H@1=0 H@3=0 H@5=1  Q: Я поступил на ДРИП платно. Могу ли я получить скидку и общежитие?
+    Q287 H@1=0 H@3=1 H@5=1  Q: Получил выговор за непрохождение СОП — что теряю и можно ли вернуть скидку?
+    Q291 H@1=0 H@3=1 H@5=1  Q: Я иностранный студент — дадут ли мне скидку и когда?
+
+  ⚠️  FAQ-перехваты (2 шт.):
+    Q227 [faq-fuzzy]  Q: Дают ли общежитие бюджетникам ФКН?
+    Q228 [faq-hash]  Q: Дают ли общежитие платникам?
+
+============================================================
+  ПО КАТЕГОРИЯМ  (hit@1 / hit@3 / hit@5)
+============================================================
+  Категория 1 — Официальные/грамотные вопросы о пост  10/11  11/11  11/11
+  Категория 2 — Сленговые и разговорные вопросы (мар  9/13  12/13  12/13
+  Категория 3 — Олимпиады и достижения (маршрут: rag  9/10  10/10  10/10
+  Категория 4 — Сроки и документы (маршрут: rag)      6/10  8/10  8/10
+  Категория 5 — ОВЗ и иностранные граждане (маршрут:  7/9  7/9  7/9
+  Категория 6 — БЛОКИРОВКА: грубые вопросы с нецензу  1/1  1/1  1/1
+  Категория 8 — Сложные и составные вопросы (маршрут  11/12  12/12  12/12
+  Раздел: Договор об образовании                      12/15  14/15  15/15
+  Раздел: Индивидуальные достижения — детали          9/15  10/15  10/15
+  Раздел: ОВЗ и инвалидность — детали                 9/10  10/10  10/10
+  Раздел: Иностранные студенты — детали               8/10  8/10  8/10
+  Раздел: ДРИП и ЭАД — специфика                      5/5  5/5  5/5
+  Раздел: Программы и сравнение — дополнительно       8/9  8/9  8/9
+  Раздел: Слэнговые варианты вопросов (должны отвеча  9/10  10/10  10/10
+  Раздел: Блокируемые вопросы (грубость и мат)        0/1  1/1  1/1
+  Раздел: Сложные составные вопросы                   16/24  21/24  22/24
+  Раздел: Стоимость обучения                          13/13  13/13  13/13
+  Раздел: Скидки на обучение                          8/11  10/11  11/11
+  Раздел: Общежитие                                   9/11  11/11  11/11
+  Раздел: Армия и военная подготовка                  10/10  10/10  10/10
+  Раздел: Академический процесс                       19/19  19/19  19/19
+  Раздел: Слэнговые вопросы (должны отвечать)         6/7  7/7  7/7
+  Раздел: Блокируемые вопросы (грубость)              1/1  1/1  1/1
+
+  Детали сохранены: /Users/aleksejvelaev/Desktop/ДЛЯ КЛОДА 2/bot/eval_results.json
