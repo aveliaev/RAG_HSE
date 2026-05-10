@@ -21,14 +21,14 @@
 ┌───────────────────────────────────────────────────────┐
 │                   Agentic RAG                         │
 │                                                       │
-│  LLM декомпозиция → поиск в ChromaDB → reranking →    │
-│  генерация ответа (Groq Llama / YandexGPT)            │
+│  LLM декомпозиция -> поиск в ChromaDB -> reranking -> │
+│  генерация ответа (YandexGPT)                         │
 └───────────────────────────────────────────────────────┘
 ```
 
 ### FAQ-кеш (3 уровня)
 1. **Точное совпадение** — нормализованный хеш вопроса, ответ мгновенно
-2. **Динамический кеш** — ответы, которые пользователи подтвердили лайком (👍 RAG → кеш)
+2. **Динамический кеш** — ответы, которые пользователи подтвердили лайком (👍 RAG -> кеш)
 3. **Fuzzy (Jaccard)** — нечёткое совпадение по токенам, порог настраивается
 
 ### Agentic RAG
@@ -37,9 +37,45 @@
 - Результаты дедуплицируются и **переранжируются** cross-encoder'ом (`mmarco-mMiniLMv2`)
 - Объединённый контекст передаётся в LLM для финального ответа
 
-### Калькулятор конкурсного балла
-Интерактивный мастер в 3 шага: предмет → баллы ЕГЭ → индивидуальные достижения.  
-Рассчитывает балл по 8 программам ФКН и сравнивает с проходными 2024 года.
+Ниже представлены основные сценарии взаимодействия с ботом: 
+
+
+```mermaid
+graph TD
+    User([Пользователь]) --> Rate{Rate limit?}
+    
+    Rate -- да --> R_Rate[«Слишком много запросов»]
+    Rate -- нет --> Content{Офтопик / нецензурное?}
+    
+    Content -- да --> R_Block[Вежливый отказ]
+    Content -- нет --> Cache{FAQ-кеш?}
+    
+    Cache -- да --> R_Cache[Мгновенный ответ из кеша]
+    Cache -- нет --> Clarify{Нужно уточнение?}
+    
+    Clarify -- да --> R_Clarify[Уточняющий вопрос]
+    Clarify -- нет --> RAG[<b>Agentic RAG</b>]
+    
+    RAG --> R_RAG[Ответ]
+
+    %% Стилизация
+    style User fill:#ffe5d9,stroke:#d4a373
+    style Rate fill:#fff9db,stroke:#fab005
+    style Content fill:#fff9db,stroke:#fab005
+    style Cache fill:#fff9db,stroke:#fab005
+    style Clarify fill:#fff9db,stroke:#fab005
+    style RAG fill:#e7f5ff,stroke:#1971c2
+    style R_Rate fill:#fff5f5,stroke:#fa5252
+    style R_Block fill:#fff5f5,stroke:#fa5252
+    style R_Cache fill:#ebfbee,stroke:#40c057
+    style R_Clarify fill:#ebfbee,stroke:#40c057
+    style R_RAG fill:#ebfbee,stroke:#40c057
+```
+
+### 1. Ответ на вопрос по базе знаний (RAG)
+Бот анализирует вопрос, находит релевантные документы и дает точный ответ. Пользователь может оценить качество ответа.
+
+![Ответ на вопрос](photo/example_of_work.jpg) 
 
 ---
 
@@ -152,12 +188,13 @@ pip install -r requirements.txt
 
 ```bash
 export TELEGRAM_TOKEN=your_token
-export GROQ_API_KEY=your_key
-
-# дополнительно 
 export YANDEX_API_KEY=your_key
 export YANDEX_FOLDER_ID=your_folder
 export USE_YANDEX=true
+
+
+# дополнительно 
+export GROQ_API_KEY=your_key
 ```
 
 ### 3. Запуск
