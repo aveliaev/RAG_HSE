@@ -121,7 +121,7 @@ graph TD
 
 Позволяет прогнать тестовый датасет и оценить качество поиска и генерации по метрикам.
 
-![RAG Evaluation Dashboard](photo/offline_metrics.jpg)
+![RAG Evaluation Dashboard](photo/offline_metrics_300.jpg)
 
 **Метрики:**
 - **Hit@1 / Hit@3 / Hit@5** — нашёлся ли нужный чанк в топе
