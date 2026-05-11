@@ -76,10 +76,10 @@ graph TD
 Бот анализирует вопрос, находит релевантные документы и дает точный ответ. Пользователь может оценить качество ответа.
 
 <p align="center">
-  <img src="photo/example_of_work.jpg" width="400" title="Пример работы 1">
-  <img src="photo/example_of_work_1.jpg" width="400" title="Пример работы 2">
+  <img src="photo/example_of_work.jpg" width="32%" />
+  <img src="photo/example_of_work_1.jpg" width="32%" />
+  <img src="photo/example_of_work_2.PNG" width="32%" />
 </p>
-
 ---
 
 ## Возможности
