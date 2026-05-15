@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Абитуриентам бакалавриата – НИУ ВШЭ</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: Arial, "Helvetica Neue", sans-serif;
+      color: #1a1a1a;
+      background: #fff;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    a:hover { color: #1a56d7; }
+    ul { list-style: none; }
+    img { max-width: 100%; display: block; }
+
+    /* ===== VARS ===== */
+    :root {
+      --blue: #1a56d7;
+      --dark-blue: #0F2D69;
+      --slide-blue: #2640A6;
+      --text: #1a1a1a;
+      --grey: #6B7A99;
+      --light-bg: #F8F5F2;
+      --tag-bg: rgba(26,86,215,.1);
+    }
+
+    /* ===== LAYOUT ===== */
+    .page { width: 100%; overflow: hidden; }
+    .inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 60px;
+    }
+    @media (max-width: 1023px) { .inner { padding: 0 32px; } }
+    @media (max-width: 767px)  { .inner { padding: 0 20px; } }
+
+    /* ===== TOP HEADER ===== */
+    .top-bar {
+      background: var(--dark-blue);
+      padding: 0 60px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .top-bar__left { display: flex; align-items: center; gap: 24px; }
+    .top-bar__logo { display: flex; align-items: center; }
+    .top-bar__logo svg { width: 40px; height: 40px; flex-shrink: 0; }
+    .top-bar__right { display: flex; align-items: center; gap: 16px; }
+    .top-bar__search {
+      color: white;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: .85;
+      cursor: pointer;
+    }
+    .top-bar__search:hover { opacity: 1; }
+
+    /* Main nav */
+    .main-nav { display: flex; align-items: center; height: 56px; }
+    .main-nav__list { display: flex; gap: 0; }
+    .main-nav__item { position: relative; }
+    .main-nav__link {
+      display: block;
+      padding: 0 16px;
+      height: 56px;
+      line-height: 56px;
+      color: rgba(255,255,255,.85);
+      font-size: 14px;
+      white-space: nowrap;
+      transition: color .15s;
+    }
+    .main-nav__link:hover { color: #fff; }
+    @media (max-width: 767px) {
+      .main-nav { display: none; }
+      .top-bar { padding: 0 20px; }
+    }
+    @media (max-width: 1023px) {
+      .main-nav__link { padding: 0 10px; font-size: 13px; }
+      .top-bar { padding: 0 32px; }
+    }
+
+    /* ===== SUB NAV BAR ===== */
+    .sub-nav {
+      background: var(--blue);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+    }
+    .sub-nav__inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 60px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .sub-nav__inner::-webkit-scrollbar { display: none; }
+    .sub-nav__title {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 14px 0;
+      margin-right: 24px;
+      flex-shrink: 0;
+    }
+    .sub-nav__list { display: flex; gap: 0; }
+    .sub-nav__item { position: relative; }
+    .sub-nav__link {
+      display: block;
+      padding: 14px 14px;
+      color: rgba(255,255,255,.8);
+      font-size: 14px;
+      white-space: nowrap;
+      transition: color .15s;
+    }
+    .sub-nav__link:hover { color: #fff; }
+    @media (max-width: 1023px) {
+      .sub-nav__inner { padding: 0 32px; }
+      .sub-nav__title { font-size: 14px; margin-right: 12px; }
+      .sub-nav__link { padding: 14px 10px; font-size: 13px; }
+    }
+    @media (max-width: 767px) {
+      .sub-nav__inner { padding: 0 20px; }
+    }
+
+    /* ===== HERO SLIDER ===== */
+    .hero {
+      background: var(--slide-blue);
+      position: relative;
+      overflow: hidden;
+      min-height: 540px;
+    }
+    .hero__slides { position: relative; }
+    .hero__slide {
+      display: none;
+      min-height: 540px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero__slide.active { display: flex; }
+    .hero__slide-inner {
+      display: flex;
+      align-items: center;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 80px 60px;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+    .hero__content { max-width: 560px; }
+    .hero__title {
+      font-size: clamp(28px, 3.5vw, 48px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.15;
+      margin-bottom: 24px;
+    }
+    .hero__title a { color: #fff; }
+    .hero__link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-size: 16px;
+      border-bottom: 1px solid rgba(255,255,255,.5);
+      padding-bottom: 2px;
+      transition: border-color .2s;
+    }
+    .hero__link:hover { color: #fff; border-color: #fff; }
+    .hero__link svg { flex-shrink: 0; }
+    .hero__bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center right;
+      z-index: 0;
+    }
+    .hero__slide-inner { position: relative; z-index: 2; }
+    /* Slide controls */
+    .hero__controls {
+      position: absolute;
+      bottom: 24px;
+      left: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+    .hero__btn {
+      background: rgba(255,255,255,.15);
+      border: none;
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: background .2s;
+    }
+    .hero__btn:hover { background: rgba(255,255,255,.3); }
+    .hero__dots { display: flex; gap: 6px; }
+    .hero__dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.4);
+      cursor: pointer;
+      border: none;
+      transition: background .2s;
+    }
+    .hero__dot.active { background: #fff; }
+    .hero__counter {
+      color: rgba(255,255,255,.7);
+      font-size: 13px;
+      margin-left: 4px;
+    }
+    @media (max-width: 767px) {
+      .hero__slide-inner { padding: 60px 20px; }
+      .hero__controls { left: 20px; }
+      .hero__bg { width: 100%; opacity: .2; }
+    }
+
+    /* ===== SECTION BASE ===== */
+    .section { padding: 60px 0; }
+    .section__inner { max-width: 1280px; margin: 0 auto; padding: 0 60px; }
+    .section__title {
+      font-size: clamp(22px, 2.5vw, 32px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 40px;
+    }
+    @media (max-width: 1023px) { .section__inner { padding: 0 32px; } }
+    @media (max-width: 767px)  { .section__inner { padding: 0 20px; } .section { padding: 40px 0; } }
+
+    /* ===== NUMBERS SECTION ===== */
+    .numbers { background: #fff; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 50px 0; }
+    .numbers__list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+    .number__val {
+      font-size: clamp(40px, 5vw, 64px);
+      font-weight: 700;
+      color: var(--blue);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .number__text {
+      font-size: 16px;
+      color: var(--grey);
+      line-height: 1.4;
+    }
+    @media (max-width: 767px) {
+      .numbers__list { grid-template-columns: 1fr; gap: 24px; }
+    }
+
+    /* ===== FEATURES CAROUSEL ===== */
+    .features { background: #f7f8fb; padding: 50px 0; }
+    .features__list {
+      display: flex;
+      gap: 32px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 8px;
+    }
+    .features__list::-webkit-scrollbar { display: none; }
+    .feature {
+      flex: 0 0 calc(25% - 24px);
+      min-width: 220px;
+    }
+    .feature__icon {
+      width: 64px;
+      height: 64px;
+      background: var(--tag-bg);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 28px;
+    }
+    .feature__text {
+      font-size: 15px;
+      color: var(--grey);
+      line-height: 1.4;
+    }
+    .feature__text a { color: var(--text); border-bottom: 1px solid #ddd; }
+    .feature__text a:hover { color: var(--blue); border-color: var(--blue); }
+    @media (max-width: 767px) { .feature { flex: 0 0 200px; } }
+
+    /* ===== SECTION HEADER (title + link) ===== */
+    .section-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      gap: 16px;
+    }
+    .section-top__title { font-size: clamp(22px, 2.5vw, 32px); font-weight: 700; }
+    .section-top__more {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--blue);
+      font-size: 15px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .section-top__more:hover { color: var(--blue); opacity: .8; }
+
+    /* ===== SUCCESS STORIES ===== */
+    .success { background: #fff; padding: 60px 0; }
+    .success__slides {
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 8px;
+    }
+    .success__slides::-webkit-scrollbar { display: none; }
+    .person {
+      flex: 0 0 360px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      background: rgba(255,199,0,.12);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .person__img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #ddd;
+    }
+    .person__img-placeholder {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e8e8e8, #ccc);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #aaa;
+    }
+    .person__name {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .person__name a { border-bottom: 1px solid rgba(0,0,0,.2); }
+    .person__text { font-size: 14px; color: var(--grey); font-style: italic; }
+    @media (max-width: 767px) { .person { flex: 0 0 280px; } }
+
+    /* ===== NEWS SECTION ===== */
+    .news { background: #f7f8fb; padding: 60px 0; }
+    .news__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+    .news-card__date {
+      font-size: 13px;
+      color: var(--grey);
+      margin-bottom: 10px;
+      text-transform: capitalize;
+    }
+    .news-card__title {
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 14px;
+    }
+    .news-card__title a:hover { color: var(--blue); }
+    .news-card__tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .news-tag {
+      font-size: 12px;
+      color: var(--blue);
+      background: var(--tag-bg);
+      border-radius: 4px;
+      padding: 4px 10px;
+    }
+    @media (max-width: 1023px) { .news__grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 767px)  { .news__grid { grid-template-columns: 1fr; gap: 24px; } }
+
+    /* ===== CONTACTS SECTION ===== */
+    .contacts { background: linear-gradient(to bottom, #F8F5F2, #fff); padding: 60px 0; }
+    .contacts__title { font-size: clamp(22px, 2.5vw, 32px); font-weight: 700; margin-bottom: 40px; }
+    .contacts__grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+    }
+    .contact-item__label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--grey);
+      margin-bottom: 8px;
+    }
+    .contact-item__value {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .contact-item__value a { color: var(--text); }
+    .contact-item__value a:hover { color: var(--blue); }
+    .contacts__phone {
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 700;
+      margin-bottom: 24px;
+      line-height: 1.2;
+    }
+    .contacts__phone a { color: var(--text); }
+    @media (max-width: 1023px) { .contacts__grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 767px)  { .contacts__grid { grid-template-columns: 1fr; gap: 24px; } }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--blue);
+      padding: 48px 0;
+      color: rgba(255,255,255,.75);
+    }
+    .footer__inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 60px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: space-between;
+    }
+    .footer__brand { display: flex; align-items: flex-start; gap: 16px; }
+    .footer__logo { flex-shrink: 0; }
+    .footer__name {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      max-width: 280px;
+    }
+    .footer__col-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .footer__links { display: flex; flex-direction: column; gap: 10px; }
+    .footer__link { font-size: 14px; color: rgba(255,255,255,.7); transition: color .15s; }
+    .footer__link:hover { color: #fff; }
+    .footer__bottom {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 60px 0;
+      border-top: 1px solid rgba(255,255,255,.15);
+      margin-top: 40px;
+      font-size: 13px;
+      color: rgba(255,255,255,.5);
+    }
+    @media (max-width: 1023px) {
+      .footer__inner { padding: 0 32px; }
+      .footer__bottom { padding: 24px 32px 0; }
+    }
+    @media (max-width: 767px) {
+      .footer__inner { padding: 0 20px; gap: 28px; }
+      .footer__bottom { padding: 24px 20px 0; }
+    }
+
+    /* ===== CHATBOT WIDGET ===== */
+    .chatbot-widget {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .chatbot-window {
+      width: 380px;
+      height: 500px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      display: none;
+      animation: slideUp .25s ease;
+    }
+    .chatbot-window.open { display: flex; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .chatbot-header {
+      background: var(--blue);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .chatbot-header__avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: rgba(255,255,255,.15);
+    }
+    .chatbot-header__avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .chatbot-header__info { flex: 1; }
+    .chatbot-header__name { color: #fff; font-weight: 700; font-size: 16px; letter-spacing: .01em; }
+    .chatbot-header__status { color: rgba(255,255,255,.7); font-size: 12px; }
+    .chatbot-header__close {
+      color: rgba(255,255,255,.7);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      padding: 4px;
+    }
+    .chatbot-header__close:hover { color: #fff; }
+    .chatbot-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f7f8fb;
+    }
+    .msg {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .msg--bot {
+      background: #fff;
+      color: #1a1a1a;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .msg--user {
+      background: var(--blue);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+    .chatbot-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid #eee;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .chatbot-input {
+      flex: 1;
+      border: 1px solid #e0e0e0;
+      border-radius: 24px;
+      padding: 10px 16px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+    .chatbot-input:focus { border-color: var(--blue); }
+    .chatbot-send {
+      background: var(--blue);
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity .2s;
+    }
+    .chatbot-send:hover { opacity: .85; }
+    .chatbot-fab {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--dark-blue);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 24px rgba(15,45,105,.55);
+      transition: transform .2s, box-shadow .2s;
+      color: #fff;
+      padding: 0;
+      overflow: hidden;
+    }
+    .chatbot-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(15,45,105,.65); }
+    .chatbot-fab img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+    .chatbot-fab__badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #e63946;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chatbot-fab-wrap { position: relative; }
+    @media (max-width: 500px) {
+      .chatbot-window { width: calc(100vw - 32px); height: 420px; }
+      .chatbot-widget { right: 16px; bottom: 16px; }
+    }
+
+    /* ===== MISC ===== */
+    .section-divider { border: none; border-top: 1px solid #eee; margin: 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===== TOP HEADER ===== -->
+  <header>
+    <div class="top-bar">
+      <div class="top-bar__left">
+        <!-- HSE Logo -->
+        <a href="#" class="top-bar__logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="20" fill="#0F2D69"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M23.4283 18.1714C24.6855 17.6 25.4855 16.8 26.0569 16.2285C27.0855 15.0857 27.4283 13.7142 27.4283 12.3428C27.4283 11.3142 27.0855 9.14281 25.2569 7.6571C23.9998 6.62853 22.8569 6.17139 20.1141 6.17139H18.7426H18.6283H12.9141V32.9142H29.0283V27.7714C29.0283 22.9714 27.5426 19.6571 23.4283 18.1714ZM25.3712 31.5428H22.3998V22.6285H19.0855V31.5428H16.4569V7.54281H19.0855C20.1141 7.54281 21.5998 7.77139 22.6283 9.02853C23.1998 9.71424 23.5426 10.6285 23.6569 11.4285H18.9712V12.8H23.6569C23.6569 13.6 23.4283 14.6285 22.6283 15.6571C21.9426 16.5714 20.6855 17.3714 18.9712 17.3714V18.7428C23.5426 18.7428 25.2569 21.7142 25.2569 27.3142V31.5428H25.3712Z" fill="white"/>
+          </svg>
+        </a>
+        <!-- Main nav -->
+        <nav class="main-nav">
+          <ul class="main-nav__list">
+            <li class="main-nav__item"><a href="#" class="main-nav__link">Поступление</a></li>
+            <li class="main-nav__item"><a href="#" class="main-nav__link">Обучение</a></li>
+            <li class="main-nav__item"><a href="#" class="main-nav__link">Наука</a></li>
+            <li class="main-nav__item"><a href="#" class="main-nav__link">Университет</a></li>
+            <li class="main-nav__item"><a href="#" class="main-nav__link">Студентам</a></li>
+            <li class="main-nav__item"><a href="#" class="main-nav__link">Выпускникам</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="top-bar__right">
+        <span class="top-bar__search" style="color:rgba(255,255,255,.7)">
+          <svg width="18" height="18" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.927 7.9c0-1.384-.492-2.568-1.476-3.552S9.283 2.872 7.899 2.872s-2.568.492-3.552 1.476-1.476 2.168-1.476 3.552.492 2.568 1.476 3.552 2.168 1.476 3.552 1.476 2.568-.492 3.552-1.476 1.476-2.168 1.476-3.552zm4.053 11.1l-4.603-4.592c-1.339.928-2.832 1.391-4.477 1.391-1.07 0-2.093-.208-3.069-.623-.976-.415-1.818-.976-2.525-1.683-.707-.707-1.268-1.549-1.683-2.525C.208 9.992 0 8.969 0 7.899c0-1.07.208-2.093.623-3.069.415-.976.976-1.818 1.683-2.525.707-.707 1.549-1.268 2.525-1.683C5.807.208 6.83 0 7.9 0c1.07 0 2.093.208 3.069.623.976.415 1.818.976 2.525 1.683.707.707 1.268 1.549 1.683 2.525.415.976.623 1.999.623 3.069 0 1.646-.464 3.138-1.391 4.477l4.603 4.603-2.031 2.02z" fill="currentColor"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+
+    <!-- Sub navigation -->
+    <nav class="sub-nav">
+      <div class="sub-nav__inner">
+        <span class="sub-nav__title">Абитуриентам бакалавриата</span>
+        <ul class="sub-nav__list">
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">График поступления</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Экскурсии в НИУ ВШЭ</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Прием — 2026</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Поступление по олимпиадам</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Калькуляторы</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Каталог программ</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Платное обучение</a></li>
+          <li class="sub-nav__item"><a href="#" class="sub-nav__link">Студентам</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ===== HERO SLIDER ===== -->
+  <section class="hero">
+    <div class="hero__slides">
+
+      <!-- Slide 1 -->
+      <div class="hero__slide active">
+        <div class="hero__bg" style="background-image: linear-gradient(90deg, rgba(26,56,180,0.92) 38%, rgba(26,56,180,0.25) 100%), url('bg_student.png');"></div>
+        <div class="hero__slide-inner">
+          <div class="hero__content">
+            <h2 class="hero__title">Как поступить в Вышку в 2026 году?</h2>
+            <a href="#" class="hero__link">
+              Смотрите запись вебинара
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M1.666 10C1.666 5.398 5.397 1.667 10 1.667c4.602 0 8.333 3.731 8.333 8.333 0 4.602-3.731 8.333-8.333 8.333-4.603 0-8.334-3.731-8.334-8.333zm6.641 3.775c.244.244.64.244.884 0l3.333-3.333c.244-.244.244-.64 0-.884L9.191 6.225c-.244-.244-.64-.244-.884 0-.244.244-.244.64 0 .884L11.199 10 8.307 12.892c-.244.244-.244.64 0 .883z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 2 -->
+      <div class="hero__slide">
+        <div class="hero__bg" style="background-image: linear-gradient(90deg, rgba(15,45,105,0.92) 38%, rgba(15,45,105,0.30) 100%), url('bg_hse.jpg');"></div>
+        <div class="hero__slide-inner">
+          <div class="hero__content">
+            <h2 class="hero__title">Правила приема — 2026</h2>
+            <a href="#" class="hero__link">
+              Подробнее
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M1.666 10C1.666 5.398 5.397 1.667 10 1.667c4.602 0 8.333 3.731 8.333 8.333 0 4.602-3.731 8.333-8.333 8.333-4.603 0-8.334-3.731-8.334-8.333zm6.641 3.775c.244.244.64.244.884 0l3.333-3.333c.244-.244.244-.64 0-.884L9.191 6.225c-.244-.244-.64-.244-.884 0-.244.244-.244.64 0 .884L11.199 10 8.307 12.892c-.244.244-.244.64 0 .883z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3 -->
+      <div class="hero__slide">
+        <div class="hero__bg" style="background-image: linear-gradient(90deg, rgba(20,50,150,0.93) 38%, rgba(20,50,150,0.25) 100%), url('bg_lecture.jpg');"></div>
+        <div class="hero__slide-inner">
+          <div class="hero__content">
+            <h2 class="hero__title">Целевое обучение в НИУ ВШЭ 2026: поступление на бюджет с гарантией трудоустройства</h2>
+            <a href="#" class="hero__link">
+              Узнать больше
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M1.666 10C1.666 5.398 5.397 1.667 10 1.667c4.602 0 8.333 3.731 8.333 8.333 0 4.602-3.731 8.333-8.333 8.333-4.603 0-8.334-3.731-8.334-8.333zm6.641 3.775c.244.244.64.244.884 0l3.333-3.333c.244-.244.244-.64 0-.884L9.191 6.225c-.244-.244-.64-.244-.884 0-.244.244-.244.64 0 .884L11.199 10 8.307 12.892c-.244.244-.244.64 0 .883z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4 -->
+      <div class="hero__slide">
+        <div class="hero__bg" style="background-image: linear-gradient(90deg, rgba(10,35,100,0.92) 38%, rgba(10,35,100,0.30) 100%), url('bg_blue.png'); background-position: center center;"></div>
+        <div class="hero__slide-inner">
+          <div class="hero__content">
+            <h2 class="hero__title">Оставайтесь в курсе актуальных мероприятий и проектов Вышки для школьников и родителей</h2>
+            <a href="#" class="hero__link">
+              Подписывайтесь на канал «Вышка школьникам»
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M1.666 10C1.666 5.398 5.397 1.667 10 1.667c4.602 0 8.333 3.731 8.333 8.333 0 4.602-3.731 8.333-8.333 8.333-4.603 0-8.334-3.731-8.334-8.333zm6.641 3.775c.244.244.64.244.884 0l3.333-3.333c.244-.244.244-.64 0-.884L9.191 6.225c-.244-.244-.64-.244-.884 0-.244.244-.244.64 0 .884L11.199 10 8.307 12.892c-.244.244-.244.64 0 .883z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5 -->
+      <div class="hero__slide">
+        <div class="hero__bg" style="background-image: linear-gradient(90deg, rgba(26,56,180,0.92) 38%, rgba(26,56,180,0.25) 100%), url('bg_hse.jpg'); background-position: center top;"></div>
+        <div class="hero__slide-inner">
+          <div class="hero__content">
+            <h2 class="hero__title">Мероприятия для абитуриентов</h2>
+            <a href="#" class="hero__link">
+              Анонсы дней открытых дверей и профориентационных встреч
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M1.666 10C1.666 5.398 5.397 1.667 10 1.667c4.602 0 8.333 3.731 8.333 8.333 0 4.602-3.731 8.333-8.333 8.333-4.603 0-8.334-3.731-8.334-8.333zm6.641 3.775c.244.244.64.244.884 0l3.333-3.333c.244-.244.244-.64 0-.884L9.191 6.225c-.244-.244-.64-.244-.884 0-.244.244-.244.64 0 .884L11.199 10 8.307 12.892c-.244.244-.244.64 0 .883z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Controls -->
+    <div class="hero__controls">
+      <button class="hero__btn" id="heroPrev" aria-label="Назад">&#8592;</button>
+      <div class="hero__dots" id="heroDots"></div>
+      <button class="hero__btn" id="heroNext" aria-label="Вперёд">&#8594;</button>
+      <span class="hero__counter"><span id="heroCurrent">1</span>/<span id="heroTotal">5</span></span>
+    </div>
+  </section>
+
+  <!-- ===== NUMBERS ===== -->
+  <section class="numbers">
+    <div class="inner">
+      <h2 class="section__title" style="margin-bottom:36px;">Цифры и факты</h2>
+      <ul class="numbers__list">
+        <li>
+          <div class="number__val">4</div>
+          <div class="number__text">города присутствия и онлайн-пространство</div>
+        </li>
+        <li>
+          <div class="number__val">120+</div>
+          <div class="number__text">образовательных программ</div>
+        </li>
+        <li>
+          <div class="number__val">41</div>
+          <div class="number__text">направление подготовки</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES ===== -->
+  <section class="features">
+    <div class="inner">
+      <div class="features__list">
+        <div class="feature">
+          <div class="feature__icon">🏆</div>
+          <p class="feature__text"><a href="#">Выпускники — одни из самых востребованных среди работодателей в стране</a></p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🎯</div>
+          <p class="feature__text"><a href="#">Индивидуальная траектория обучения</a></p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">💼</div>
+          <p class="feature__text"><a href="#">Центр развития карьеры</a></p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🏠</div>
+          <p class="feature__text"><a href="#">Современные общежития и удобные сервисы по поиску альтернативного жилья</a></p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🎓</div>
+          <p class="feature__text"><a href="#">Широкая программа поддержки студенческих инициатив</a></p>
+        </div>
+        <div class="feature">
+          <div class="feature__icon">🎖️</div>
+          <p class="feature__text"><a href="#">Военный учебный центр</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== SUCCESS STORIES ===== -->
+  <section class="success">
+    <div class="inner">
+      <div class="section-top">
+        <h2 class="section-top__title">Конструктор успеха</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="hero__btn" id="successPrev" style="position:static;background:#f0f0f0;color:#333;">&#8592;</button>
+          <button class="hero__btn" id="successNext" style="position:static;background:#f0f0f0;color:#333;">&#8594;</button>
+        </div>
+      </div>
+      <div class="success__slides" id="successSlides">
+        <div class="person">
+          <div class="person__img-placeholder">👩</div>
+          <div>
+            <h3 class="person__name"><a href="#">Марина Демидова</a></h3>
+            <p class="person__text">«В бизнесе можно максимально реализовать свои творческие способности»</p>
+          </div>
+        </div>
+        <div class="person">
+          <div class="person__img-placeholder">👨</div>
+          <div>
+            <h3 class="person__name"><a href="#">Андрей Кучеров</a></h3>
+            <p class="person__text">«Аграрная отрасль нуждается в молодых кадрах»</p>
+          </div>
+        </div>
+        <div class="person">
+          <div class="person__img-placeholder">👩</div>
+          <div>
+            <h3 class="person__name"><a href="#">Нарэ Мелоян</a></h3>
+            <p class="person__text">«Выпускники финансово-экономических программ могут заниматься чем угодно»</p>
+          </div>
+        </div>
+        <div class="person">
+          <div class="person__img-placeholder">👨</div>
+          <div>
+            <h3 class="person__name"><a href="#">Никита Зубков</a></h3>
+            <p class="person__text">«Профессиональное любопытство важно для карьерного роста»</p>
+          </div>
+        </div>
+        <div class="person">
+          <div class="person__img-placeholder">👨</div>
+          <div>
+            <h3 class="person__name"><a href="#">Георгий Пащенко</a></h3>
+            <p class="person__text">«Я люблю рисковать и не боюсь перемен»</p>
+          </div>
+        </div>
+        <div class="person">
+          <div class="person__img-placeholder">👨</div>
+          <div>
+            <h3 class="person__name"><a href="#">Никита Зименко</a></h3>
+            <p class="person__text">«IT — это непаханое поле профессий»</p>
+          </div>
+        </div>
+        <div class="person">
+          <div class="person__img-placeholder">👨</div>
+          <div>
+            <h3 class="person__name"><a href="#">Константин Замков</a></h3>
+            <p class="person__text">«Я считаю, что выпускнику Вышки все по плечу»</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider">
+
+  <!-- ===== NEWS ===== -->
+  <section class="news">
+    <div class="inner">
+      <div class="section-top">
+        <h2 class="section-top__title">Новости</h2>
+        <a href="#" class="section-top__more">
+          Все новости
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M1.666 10C1.666 5.398 5.397 1.667 10 1.667c4.602 0 8.333 3.731 8.333 8.333 0 4.602-3.731 8.333-8.333 8.333-4.603 0-8.334-3.731-8.334-8.333zm6.641 3.775c.244.244.64.244.884 0l3.333-3.333c.244-.244.244-.64 0-.884L9.191 6.225c-.244-.244-.64-.244-.884 0-.244.244-.244.64 0 .884L11.199 10 8.307 12.892c-.244.244-.244.64 0 .883z" fill="currentColor"/></svg>
+        </a>
+      </div>
+      <div class="news__grid">
+        <div class="news-card">
+          <p class="news-card__date">29 апреля</p>
+          <h3 class="news-card__title"><a href="#">НИУ ВШЭ сохраняет скидки для поступающих и студентов</a></h3>
+          <div class="news-card__tags">
+            <span class="news-tag">Поступающим</span>
+          </div>
+        </div>
+        <div class="news-card">
+          <p class="news-card__date">15 апреля</p>
+          <h3 class="news-card__title"><a href="#">Опубликовано количество целевых мест</a></h3>
+          <div class="news-card__tags">
+            <span class="news-tag">Поступающим</span>
+            <span class="news-tag">бакалавриат</span>
+          </div>
+        </div>
+        <div class="news-card">
+          <p class="news-card__date">1 апреля</p>
+          <h3 class="news-card__title"><a href="#">562 диплома, четыре профиля: итоги Всероссийской олимпиады школьников по информатике</a></h3>
+          <div class="news-card__tags">
+            <span class="news-tag">Образование</span>
+            <span class="news-tag">довузовская подготовка</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONTACTS ===== -->
+  <section class="contacts">
+    <div class="inner">
+      <h2 class="contacts__title">Контакты Приемной комиссии</h2>
+      <div class="contacts__phone">
+        <a href="tel:+74957713242">+7 (495) 771-32-42</a>,&nbsp;<a href="tel:+74959168844">+7 (495) 916-88-44</a>
+      </div>
+      <div class="contacts__grid">
+        <div class="contact-item">
+          <p class="contact-item__label">Адрес</p>
+          <div class="contact-item__value">Москва, ул. Мясницкая, д. 20</div>
+        </div>
+        <div class="contact-item">
+          <p class="contact-item__label">Почта</p>
+          <div class="contact-item__value"><a href="mailto:abitur@hse.ru">abitur@hse.ru</a></div>
+        </div>
+        <div class="contact-item">
+          <p class="contact-item__label">График работы</p>
+          <div class="contact-item__value">Пн–Пт с&nbsp;10:00 до&nbsp;18:00</div>
+        </div>
+        <div class="contact-item">
+          <p class="contact-item__label">Мы в соцсетях</p>
+          <div class="contact-item__value" style="font-size:15px;font-weight:400;">
+            <div><a href="#">ВКонтакте — Хочу в НИУ ВШЭ</a></div>
+            <div style="margin-top:6px;"><a href="#">Telegram — Поступай как знаешь</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <div class="footer__logo">
+          <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="20" fill="rgba(255,255,255,0.15)"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M23.4283 18.1714C24.6855 17.6 25.4855 16.8 26.0569 16.2285C27.0855 15.0857 27.4283 13.7142 27.4283 12.3428C27.4283 11.3142 27.0855 9.14281 25.2569 7.6571C23.9998 6.62853 22.8569 6.17139 20.1141 6.17139H18.7426H18.6283H12.9141V32.9142H29.0283V27.7714C29.0283 22.9714 27.5426 19.6571 23.4283 18.1714ZM25.3712 31.5428H22.3998V22.6285H19.0855V31.5428H16.4569V7.54281H19.0855C20.1141 7.54281 21.5998 7.77139 22.6283 9.02853C23.1998 9.71424 23.5426 10.6285 23.6569 11.4285H18.9712V12.8H23.6569C23.6569 13.6 23.4283 14.6285 22.6283 15.6571C21.9426 16.5714 20.6855 17.3714 18.9712 17.3714V18.7428C23.5426 18.7428 25.2569 21.7142 25.2569 27.3142V31.5428H25.3712Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="footer__name">Национальный исследовательский университет «Высшая школа экономики»</div>
+      </div>
+
+      <div>
+        <p class="footer__col-title">Поступление</p>
+        <div class="footer__links">
+          <a href="#" class="footer__link">Абитуриентам бакалавриата</a>
+          <a href="#" class="footer__link">Абитуриентам магистратуры</a>
+          <a href="#" class="footer__link">Абитуриентам аспирантуры</a>
+          <a href="#" class="footer__link">Иностранным абитуриентам</a>
+        </div>
+      </div>
+
+      <div>
+        <p class="footer__col-title">Прием 2026</p>
+        <div class="footer__links">
+          <a href="#" class="footer__link">Документы и правила приема</a>
+          <a href="#" class="footer__link">Количество мест</a>
+          <a href="#" class="footer__link">Вступительные испытания</a>
+          <a href="#" class="footer__link">Калькуляторы</a>
+          <a href="#" class="footer__link">Каталог программ</a>
+        </div>
+      </div>
+
+      <div>
+        <p class="footer__col-title">Контакты</p>
+        <div class="footer__links">
+          <a href="tel:+74957713242" class="footer__link">+7 (495) 771-32-42</a>
+          <a href="mailto:abitur@hse.ru" class="footer__link">abitur@hse.ru</a>
+          <span class="footer__link">Москва, ул. Мясницкая, 20</span>
+          <span class="footer__link">Пн–Пт 10:00–18:00</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      © НИУ ВШЭ, 1993–2026&nbsp;&nbsp;·&nbsp;&nbsp;Информация для абитуриентов бакалавриата&nbsp;&nbsp;·&nbsp;&nbsp;Сайт создан в учебных целях
+    </div>
+  </footer>
+
+</div><!-- .page -->
+
+<!-- ===== CHATBOT WIDGET ===== -->
+<div class="chatbot-widget">
+  <!-- Chat window -->
+  <div class="chatbot-window" id="chatWindow">
+    <div class="chatbot-header">
+      <div class="chatbot-header__avatar">
+        <img id="headerImg" src="avatar.JPG" alt="Поступариум">
+        <span id="headerFallback" style="display:none;font-size:22px;line-height:42px;text-align:center;">🎓</span>
+      </div>
+      <div class="chatbot-header__info">
+        <div class="chatbot-header__name">Поступариум</div>
+        <div class="chatbot-header__status">● Онлайн — спроси меня о поступлении!</div>
+      </div>
+      <button class="chatbot-header__close" id="chatClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="chatbot-messages" id="chatMessages">
+      <div class="msg msg--bot">Привет! Я <b>Поступариум</b> — умный помощник для абитуриентов НИУ ВШЭ 🎓<br><br>Спроси меня о правилах приёма, программах, сроках или стоимости обучения!</div>
+    </div>
+    <div class="chatbot-input-area">
+      <input class="chatbot-input" id="chatInput" type="text" placeholder="Напишите вопрос..." autocomplete="off">
+      <button class="chatbot-send" id="chatSend" aria-label="Отправить">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M2 21L23 12 2 3v7l15 2-15 2v7z" fill="white"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- FAB button -->
+  <div class="chatbot-fab-wrap">
+    <button class="chatbot-fab" id="chatFab" aria-label="Открыть чат с Поступариумом">
+      <img id="fabImg" src="avatar.JPG" alt="Поступариум">
+      <span id="fabFallback" style="display:none;font-size:28px;">🎓</span>
+    </button>
+    <div class="chatbot-fab__badge">1</div>
+  </div>
+</div>
+
+<!-- ===== JS ===== -->
+<script>
+  /* --- Hero Slider --- */
+  const slides   = document.querySelectorAll('.hero__slide');
+  const dotsWrap = document.getElementById('heroDots');
+  const curEl    = document.getElementById('heroCurrent');
+  const totEl    = document.getElementById('heroTotal');
+  let current = 0;
+  let timer;
+
+  totEl.textContent = slides.length;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'hero__dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsWrap.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    dotsWrap.children[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    dotsWrap.children[current].classList.add('active');
+    curEl.textContent = current + 1;
+    resetTimer();
+  }
+
+  function resetTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => goTo(current + 1), 5000);
+  }
+
+  document.getElementById('heroPrev').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('heroNext').addEventListener('click', () => goTo(current + 1));
+  resetTimer();
+
+  /* --- Success scroll --- */
+  const successEl = document.getElementById('successSlides');
+  document.getElementById('successPrev').addEventListener('click', () => {
+    successEl.scrollBy({ left: -400, behavior: 'smooth' });
+  });
+  document.getElementById('successNext').addEventListener('click', () => {
+    successEl.scrollBy({ left: 400, behavior: 'smooth' });
+  });
+
+  /* --- Chatbot --- */
+  // Avatar fallbacks (безопасно — без innerHTML)
+  const fabImg = document.getElementById('fabImg');
+  if (fabImg) {
+    fabImg.addEventListener('error', function() {
+      fabImg.style.display = 'none';
+      document.getElementById('fabFallback').style.display = 'inline';
+    });
+  }
+  const headerImg = document.getElementById('headerImg');
+  if (headerImg) {
+    headerImg.addEventListener('error', function() {
+      headerImg.style.display = 'none';
+      document.getElementById('headerFallback').style.display = 'block';
+    });
+  }
+
+  const fab     = document.getElementById('chatFab');
+  const win     = document.getElementById('chatWindow');
+  const close   = document.getElementById('chatClose');
+  const input   = document.getElementById('chatInput');
+  const send    = document.getElementById('chatSend');
+  const msgs    = document.getElementById('chatMessages');
+  const badge   = document.querySelector('.chatbot-fab__badge');
+
+  function openChat() {
+    win.classList.add('open');
+    if (badge) badge.style.display = 'none';
+    setTimeout(() => input.focus(), 100);
+  }
+  function closeChat() { win.classList.remove('open'); }
+
+  fab.addEventListener('click', () => win.classList.contains('open') ? closeChat() : openChat());
+  close.addEventListener('click', closeChat);
+
+  function addMsg(text, type) {
+    const d = document.createElement('div');
+    d.className = 'msg msg--' + type;
+    d.textContent = text;
+    msgs.appendChild(d);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  const botReplies = [
+    'Чтобы поступить в бакалавриат НИУ ВШЭ, нужно сдать ЕГЭ и подать документы в приёмную комиссию.',
+    'Прием документов в 2026 году начнётся 20 июня. Следите за новостями на ba.hse.ru!',
+    'У нас более 120 образовательных программ в 4 городах. Посмотрите каталог программ!',
+    'Вы можете поступить по олимпиаде или конкурсу ЕГЭ. Узнайте подробности в разделе «Прием — 2026».',
+    'Стоимость обучения зависит от программы. Подробнее — в разделе «Платное обучение».',
+  ];
+  let replyIdx = 0;
+
+  function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    addMsg(text, 'user');
+    input.value = '';
+    setTimeout(() => {
+      addMsg(botReplies[replyIdx % botReplies.length], 'bot');
+      replyIdx++;
+    }, 700);
+  }
+
+  send.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+</script>
+
+</body>
+</html>
