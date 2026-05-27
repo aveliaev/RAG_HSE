@@ -35,6 +35,7 @@ from rag_engine import build_index, check_content, needs_clarification
 from agentic_rag import agentic_ask as ask_rag
 from calculator import try_calculate, calculate, SUBJ_OPTIONS, SUBJ_KW
 from bot_events import log_interaction, log_vote
+from speech import transcribe_ogg
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -641,6 +642,49 @@ async def _handle_wizard_achievements(message, user_id: int, question: str, calc
     )
     await message.reply_text(_to_html(result), parse_mode="HTML")
 
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    lang = _detect_lang(_user_citizenship.get(user_id, ""))
+
+    if _is_rate_limited(user_id):
+        msg = "⏳ Too many requests. Please wait a moment." if lang == "en" else "⏳ Слишком много запросов. Подождите немного."
+        await update.message.reply_text(msg)
+        return
+
+    voice = update.message.voice
+    if voice.duration > 60:
+        await update.message.reply_text(
+            "🎙 Голосовое сообщение слишком длинное (максимум 60 секунд). Напишите вопрос текстом."
+        )
+        return
+
+    await update.message.chat.send_action(ChatAction.TYPING)
+
+    tg_file = await context.bot.get_file(voice.file_id)
+    audio_bytes = await tg_file.download_as_bytearray()
+
+    tg_lang = (update.effective_user.language_code or "")[:2].lower()
+    stt_lang = "en-US" if tg_lang == "en" else "ru-RU"
+    question = await transcribe_ogg(bytes(audio_bytes), lang=stt_lang)
+
+    if not question:
+        await update.message.reply_text(
+            "😔 Не удалось распознать речь. Попробуйте ещё раз или напишите вопрос текстом."
+        )
+        return
+
+    log.info("Voice→text user %d: %s", user_id, question[:80])
+    await update.message.reply_text(f"🎙 <i>Распознано:</i> {question}", parse_mode="HTML")
+
+    if not _user_citizenship.get(user_id):
+        _pending_question[user_id] = question
+        cq, ckb = _citizenship_prompt("en" if tg_lang == "en" else "ru")
+        await update.message.reply_text(cq, parse_mode="HTML", reply_markup=ckb)
+        return
+
+    await _process_question(update.message, user_id, question)
+
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     question = (update.message.text or "").strip()
     if not question:
@@ -729,6 +773,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(handle_calc_step, pattern="^calc_"))
     app.add_handler(CallbackQueryHandler(handle_vote, pattern="^vote_"))
     app.add_handler(InlineQueryHandler(handle_inline))
+    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     if WEBHOOK_URL:

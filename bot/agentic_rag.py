@@ -36,7 +36,13 @@ _DECOMPOSE_PROMPT = (
     "[\"иностранные граждане вступительные испытания ПМИ минимальный балл\"]\n"
     "Вопрос: «у меня медаль и Лицей Яндекса — сколько суммарно баллов» → "
     "[\"аттестат с отличием медаль баллы индивидуальные достижения\", "
-    "\"лицей академии яндекса дополнительные баллы программы ФКН\"]\n\n"
+    "\"лицей академии яндекса дополнительные баллы программы ФКН\"]\n"
+    "Вопрос: «сколько нужно баллов на КНАД и сколько баллов даёт ГТО» → "
+    "[\"минимальные баллы ЕГЭ компьютерные науки и анализ данных КНАД\", "
+    "\"ГТО золотой серебряный дополнительные баллы индивидуальные достижения\"]\n"
+    "Вопрос: «минбаллы на ПМИ и что дают за волонтёрство» → "
+    "[\"минимальные баллы ЕГЭ прикладная математика и информатика\", "
+    "\"волонтёрская деятельность дополнительные баллы индивидуальные достижения\"]\n\n"
     "Верни ТОЛЬКО JSON-массив строк, без пояснений. Пример: [\"запрос 1\", \"запрос 2\"]"
 )
 
@@ -80,17 +86,63 @@ def _parse_queries(raw: str) -> list[str]:
             pass
     return []
 
+_ACHIEVEMENT_KW = [
+    "гто", "медаль", "волонтёр", "волонтер", "кмс", "мастер спорта",
+    "абилимпикс", "аттестат", "отличи", "лицей яндекс", "яндекс лицей",
+    "большая перемена", "конкурс", "достижени", "индивидуальн",
+    "t-поколен", "т-поколен", "золот", "серебр",
+]
+_PROGRAM_SCORE_KW = [
+    "пми", "пад", "кнад", "эад", "дрип", "прогинж", "робот",
+    "прикладн", "компьютерн", "программн", "разработ", "экономик",
+    "минимальн", "проходн", "балл", "поступ", "нужно набрать",
+]
+
+def _rule_split(question: str) -> list[str] | None:
+    q = question.lower()
+    has_achievement = any(kw in q for kw in _ACHIEVEMENT_KW)
+    has_program_score = any(kw in q for kw in _PROGRAM_SCORE_KW)
+    if not (has_achievement and has_program_score):
+        return None
+
+    # Detect "и сколько / а также / плюс" joining two questions
+    split_patterns = [
+        r"\s+и\s+сколько\s+",
+        r"\s+и\s+что\s+дают\s+за\s+",
+        r"\s+и\s+что\s+даёт\s+",
+        r"\s+и\s+сколько\s+дают\s+за\s+",
+        r"\s+а\s+также\s+",
+        r"\s+плюс\s+",
+        r"\s+и\s+ещё\s+",
+        r"\s+и\s+еще\s+",
+    ]
+    for pat in split_patterns:
+        parts = re.split(pat, q, maxsplit=1)
+        if len(parts) == 2:
+            return [parts[0].strip(), parts[1].strip()]
+    return None
+
 def decompose_query(question: str) -> list[str]:
     try:
         raw = _llm_call(_DECOMPOSE_PROMPT, f"Вопрос: {question}")
         queries = _parse_queries(raw)
+        if queries and len(queries) >= 2:
+            return queries[:3]
+        # LLM returned 1 generic query — try rule-based split first
+        split = _rule_split(question)
+        if split:
+            return split
         if queries:
             return queries[:3]
     except Exception as e:
         log.warning("decompose_query failed: %s", e)
+
+    split = _rule_split(question)
+    if split:
+        return split
     return [question]
 
-def agentic_retrieve(question: str, chunks_per_query: int = 3) -> str:
+def agentic_retrieve(question: str, chunks_per_query: int = 4) -> str:
     queries = decompose_query(question)
 
     seen: set[str] = set()
@@ -124,13 +176,13 @@ def agentic_ask(
     seen: set[str] = set()
     unique_chunks: list[dict] = []
     for query in queries:
-        chunks = retrieve_k(query, k=3, skip_llm_rewrite=True)
+        chunks = retrieve_k(query, k=4, skip_llm_rewrite=True)
         for c in chunks:
             key = f"{c['source']}|{c['heading']}"
             if key not in seen:
                 seen.add(key)
                 unique_chunks.append(c)
-    unique_chunks = unique_chunks[:8]
+    unique_chunks = unique_chunks[:10]
 
     meta = {"sub_queries": queries, "n_chunks": len(unique_chunks)}
 
