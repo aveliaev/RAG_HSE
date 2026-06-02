@@ -29,10 +29,19 @@ from config import (
     RATE_LIMIT_MAX, RATE_LIMIT_WINDOW,
     DISLIKE_LOG, WEBHOOK_URL, WEBHOOK_PORT,
     ADMIN_USER_ID, QUARANTINE_FILE,
+    USE_AGENTIC_RAG,
 )
 from faq_cache import lookup as faq_lookup, add_to_dynamic_cache, quarantine_answer, get_cache_stats
-from rag_engine import build_index, check_content, needs_clarification
-from agentic_rag import agentic_ask as ask_rag
+from rag_engine import build_index, check_content, needs_clarification, llm_clarify
+from agentic_rag import agentic_ask
+
+# Выбор RAG-пайплайна по флагу USE_AGENTIC_RAG:
+#   true  → настоящий agent-loop (retrieve → grade → refine → re-retrieve)
+#   false → декомпозиция запроса (одноразовый мульти-retrieve)
+if USE_AGENTIC_RAG:
+    from agentic_loop import agentic_loop_ask as ask_rag
+else:
+    ask_rag = agentic_ask
 from calculator import try_calculate, calculate, SUBJ_OPTIONS, SUBJ_KW
 from bot_events import log_interaction, log_vote
 from speech import transcribe_ogg
@@ -290,9 +299,11 @@ async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     pct = round(total_cache / total * 100) if total else 0
 
     cs = get_cache_stats()
+    pipeline = "agentic-loop" if USE_AGENTIC_RAG else "декомпозиция"
     text = (
         f"<b>📊 Статистика</b>\n\n"
-        f"⏱ Uptime: {h}ч {m}м\n\n"
+        f"⏱ Uptime: {h}ч {m}м\n"
+        f"⚙️ RAG: {pipeline}\n\n"
         f"<b>Запросы:</b>\n"
         f"  Всего: {total}\n"
         f"  Кеш: {total_cache} ({pct}%)\n"
@@ -534,6 +545,10 @@ async def _process_question(message, user_id: int, question: str) -> None:
         return
 
     clarification = needs_clarification(question, history)
+    if not clarification:
+        clarification = await asyncio.get_running_loop().run_in_executor(
+            None, llm_clarify, question, history, lang
+        )
     if clarification:
         log.info("Clarification needed for user %d", user_id)
         _add_to_history(user_id, "user", question)
@@ -751,6 +766,8 @@ async def post_init(application: Application) -> None:
 def main() -> None:
     if not TELEGRAM_TOKEN:
         raise RuntimeError("Переменная окружения TELEGRAM_TOKEN не задана!")
+
+    log.info("RAG-пайплайн: %s", "agentic-loop" if USE_AGENTIC_RAG else "декомпозиция запроса")
 
     log.info("Строим ChromaDB-индекс...")
     n = build_index()

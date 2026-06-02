@@ -9,7 +9,7 @@ from config import (
     GROQ_API_KEY, GROQ_MODEL, RAG_TOP_K, DOCS_DIR,
     YANDEX_API_KEY, YANDEX_FOLDER_ID, YANDEX_MODEL, USE_YANDEX,
     ENABLE_LLM_REWRITE, EMBED_MODEL, RERANKER_MODEL, ENABLE_RERANKER,
-    CHROMA_DIR,
+    CHROMA_DIR, ENABLE_LLM_CLARIFY,
 )
 from knowledge_base import SYSTEM_PROMPT
 
@@ -398,6 +398,75 @@ def needs_clarification(question: str, history: list[dict]) -> str | None:
         return rule["question"]
 
     return None
+
+_CLARIFY_PROMPT = (
+    "Ты — фильтр уточняющих вопросов для бота-консультанта по поступлению на ФКН НИУ ВШЭ.\n"
+    "Тебе дают вопрос абитуриента (и при наличии — предыдущий диалог).\n"
+    "Реши: можно ли дать конкретный полезный ответ, или вопросу не хватает ключевой детали.\n\n"
+    "Уточнение НУЖНО, если без детали ответ будет неоднозначным, например:\n"
+    "- спрашивают про минимальные/проходные баллы, вступительные испытания, БВИ, олимпиады, "
+    "скидки — но НЕ указана программа ФКН (ПМИ, ПАД, КНАД, ЭАД, Программная инженерия, "
+    "Робототехника, ДРИП, Разработка игр);\n"
+    "- спрашивают про сроки подачи или зачисление — но не ясно, бюджет или платное.\n\n"
+    "Уточнение НЕ нужно, если:\n"
+    "- вопрос общий по сути (что такое квазибюджет, как работает БВИ, перечисли программы, сравни X и Y);\n"
+    "- нужная деталь уже есть в вопросе ИЛИ в предыдущем диалоге.\n\n"
+    "Ответь СТРОГО так:\n"
+    "- если всё понятно для ответа — ровно одно слово: OK\n"
+    "- если нужно уточнение — одну короткую уточняющую фразу на языке вопроса, без преамбул и кавычек."
+)
+
+def _clarify_llm_call(prompt: str, user_text: str) -> str:
+    if USE_YANDEX:
+        return yandex_complete(
+            messages=[{"role": "user", "content": user_text}],
+            system=prompt, max_tokens=80, temperature=0.1,
+        )
+    resp = _groq.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_text},
+        ],
+        max_tokens=80, temperature=0.1,
+    )
+    return (resp.choices[0].message.content or "").strip()
+
+def llm_clarify(question: str, history: list[dict], lang: str = "ru") -> str | None:
+    """LLM читает вопрос и, если не хватает ключевой детали, возвращает уточняющий вопрос.
+
+    Fallback после rule-based needs_clarification. Возвращает None, если уточнение не нужно.
+    """
+    if not ENABLE_LLM_CLARIFY or not (USE_YANDEX or GROQ_API_KEY):
+        return None
+
+    # Не зацикливаемся: если бот только что сам задал вопрос — юзер сейчас отвечает на него.
+    last_bot = next((m["content"] for m in reversed(history) if m["role"] == "assistant"), "")
+    if last_bot.rstrip().endswith("?"):
+        return None
+
+    hist_txt = ""
+    if history:
+        recent = history[-4:]
+        hist_txt = "\n".join(
+            f"{'Абитуриент' if m['role'] == 'user' else 'Бот'}: {m['content']}" for m in recent
+        )
+    user_text = (f"Предыдущий диалог:\n{hist_txt}\n\n" if hist_txt else "") + f"Вопрос: {question}"
+
+    try:
+        raw = _clarify_llm_call(_CLARIFY_PROMPT, user_text).strip().strip('"').strip()
+    except Exception as e:
+        log.warning("llm_clarify failed: %s", e)
+        return None
+
+    if not raw or len(raw) < 5:
+        return None
+    normalized = re.sub(r"[^a-zа-яё]", "", raw.lower())
+    if normalized in {"ok", "ок", "окей", "okay"} or raw.upper().startswith("OK"):
+        return None
+    if _is_llm_refusal(raw):
+        return None
+    return raw
 
 _reranker = None
 if ENABLE_RERANKER:
