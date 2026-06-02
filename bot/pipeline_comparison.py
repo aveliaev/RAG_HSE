@@ -8,14 +8,17 @@ pipeline_comparison.py — Сравнение конфигураций пайп�
   3. + Regex Rewrite   — добавляет нормализацию сленга (regex)
   4. + LLM Decomp      — разбивает запрос на подзапросы, реранк по исходному Q
   5. + FAQ Cache       — добавляет трёхуровневый кеш перед пайплайном
+  6. + Agentic Loop    — на базе #4: итеративный цикл grade→refine→re-retrieve
+                         (LLM оценивает достаточность контекста и доискивает)
 
 Запуск:
   python3 pipeline_comparison.py
   python3 pipeline_comparison.py --questions 50
   python3 pipeline_comparison.py --output results/
 
-Внимание: конфигурация 4 делает LLM-вызов на каждый вопрос (~1-3с),
-поэтому на 245 вопросах ожидаемое время ~15-20 мин.
+Внимание: конфигурация 4 делает 1 LLM-вызов на вопрос (~1-3с), а конфигурация 6 —
+2-4 LLM-вызова (декомпозиция + grade + опц. refine). На 245 вопросах ожидаемое
+время ~25-35 мин. Для быстрой прикидки используйте --questions 30.
 """
 
 import sys, os, re, json, time, argparse, logging, statistics
@@ -44,6 +47,7 @@ for _ef in (BOT_DIR / ".env", ROOT / ".env"):
 logging.basicConfig(level=logging.WARNING)
 
 from rag_engine import _split_into_chunks, _rewrite_query, _rerank
+from agentic_loop import _grade_context, _refine_query
 from faq_cache import lookup as faq_lookup, _normalize as faq_normalize
 from eval_rag import (
     parse_qa, tokenize,
@@ -147,6 +151,8 @@ class PipelineConfig:
     enable_regex:     bool = False
     enable_decomp:    bool = False
     enable_faq:       bool = False
+    enable_agentic_loop: bool = False
+    max_iters:        int  = 2
     top_k:            int  = 5
     reranker_model:   str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 
@@ -175,6 +181,12 @@ CONFIGS: list[PipelineConfig] = [
         id=5, name="+ FAQ Cache",
         label="5. + FAQ\nCache",
         enable_regex=True, enable_reranker=True, enable_decomp=True, enable_faq=True,
+    ),
+    PipelineConfig(
+        id=6, name="+ Agentic Loop",
+        label="6. + Agentic\nLoop",
+        enable_regex=True, enable_reranker=True, enable_decomp=True,
+        enable_agentic_loop=True, max_iters=2,
     ),
 ]
 
@@ -286,6 +298,64 @@ def retrieve_decomposed(question, collection, cfg, reranker, query_prefix, doc_p
     return chunks, (time.perf_counter() - t0) * 1000, sub_queries
 
 
+def retrieve_agentic_loop(question, collection, cfg, reranker, query_prefix, doc_prefix):
+    """
+    Agentic-loop retrieval (на базе декомпозиции):
+      decompose → retrieve → grade (LLM) → при нехватке refine (LLM) → re-retrieve.
+    Повтор до cfg.max_iters раз. Возвращает финальный top-K (реранк по исходному Q).
+    Логика grade/refine импортирована из agentic_loop.py — та же, что в проде.
+    """
+    t0 = time.perf_counter()
+    n_cand = max(cfg.top_k * 2, 10)
+    seen: set[str] = set()
+    candidates: list[dict] = []
+
+    def _search(q: str) -> None:
+        rewritten = _rewrite_query(q) if cfg.enable_regex else q
+        results = collection.query(query_texts=[query_prefix + rewritten], n_results=n_cand)
+        for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
+            key = f"{meta['source']}|{meta['heading']}"
+            if key not in seen:
+                seen.add(key)
+                clean = doc[len(doc_prefix):] if doc.startswith(doc_prefix) else doc
+                candidates.append({"text": clean, "source": meta["source"], "heading": meta["heading"]})
+
+    def _top_context() -> str:
+        if cfg.enable_reranker and reranker is not None and candidates:
+            top = _rerank(question, candidates, top_k=cfg.top_k)
+        else:
+            top = candidates[:cfg.top_k]
+        return "\n\n---\n\n".join(f"[{c['source']} / {c['heading']}]\n{c['text']}" for c in top)
+
+    # начальный retrieve через декомпозицию
+    sub_queries = decompose_query(question)
+    for sq in sub_queries:
+        _search(sq)
+
+    all_queries = list(sub_queries)
+    n_iters = 0
+
+    for _ in range(max(0, cfg.max_iters)):
+        if not candidates:
+            break
+        grade = _grade_context(question, _top_context())
+        n_iters += 1
+        if grade["sufficient"]:
+            break
+        refined = _refine_query(question, _top_context(), grade["missing"])
+        if not refined or refined.lower() in {q.lower() for q in all_queries}:
+            break
+        all_queries.append(refined)
+        _search(refined)
+
+    if cfg.enable_reranker and reranker is not None and candidates:
+        chunks = _rerank(question, candidates, top_k=cfg.top_k)
+    else:
+        chunks = candidates[:cfg.top_k]
+
+    return chunks, (time.perf_counter() - t0) * 1000, {"queries": all_queries, "iters": n_iters}
+
+
 @dataclass
 class ConfigResult:
     cfg:           PipelineConfig
@@ -334,7 +404,9 @@ def run_config(cfg, qa_pairs, collection, reranker, verbose=False, warm=None):
                 cr_l.append(context_recall(ref_tok, cached))
                 continue
 
-        if cfg.enable_decomp:
+        if cfg.enable_agentic_loop:
+            chunks, ms, _ = retrieve_agentic_loop(q, collection, cfg, reranker, query_prefix, doc_prefix)
+        elif cfg.enable_decomp:
             chunks, ms, _ = retrieve_decomposed(q, collection, cfg, reranker, query_prefix, doc_prefix)
         else:
             chunks, ms = retrieve_one(q, collection, cfg, reranker, query_prefix, doc_prefix)
@@ -430,7 +502,7 @@ def build_dashboard(results, out_path):
         print("  matplotlib не установлен, пропускаю dashboard")
         return
 
-    PALETTE = ["#4C72B0","#DD8452","#55A868","#8172B2","#C44E52"]
+    PALETTE = ["#4C72B0","#DD8452","#55A868","#8172B2","#C44E52","#937860"]
     names   = [r.cfg.name for r in results]
     N       = len(results)
     x       = np.arange(N)
