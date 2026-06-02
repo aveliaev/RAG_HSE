@@ -35,9 +35,7 @@ from faq_cache import lookup as faq_lookup, add_to_dynamic_cache, quarantine_ans
 from rag_engine import build_index, check_content, needs_clarification, llm_clarify
 from agentic_rag import agentic_ask
 
-# Выбор RAG-пайплайна по флагу USE_AGENTIC_RAG:
-#   true  → настоящий agent-loop (retrieve → grade → refine → re-retrieve)
-#   false → декомпозиция запроса (одноразовый мульти-retrieve)
+
 if USE_AGENTIC_RAG:
     from agentic_loop import agentic_loop_ask as ask_rag
 else:

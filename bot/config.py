@@ -22,16 +22,11 @@ USE_YANDEX = (
 
 ENABLE_LLM_REWRITE = os.getenv("ENABLE_LLM_REWRITE", "true").lower() == "true"
 
-# Agentic RAG: итеративный цикл retrieve → grade → refine → re-retrieve.
-# Выключен по умолчанию — тогда работает декомпозиция запроса (agentic_rag.agentic_ask).
 USE_AGENTIC_RAG = os.getenv("USE_AGENTIC_RAG", "false").lower() == "true"
 
-# Максимум доп. итераций до-поиска (сверх первого retrieve). 0 = без цикла.
 AGENTIC_MAX_ITERS = int(os.getenv("AGENTIC_MAX_ITERS", "2"))
 
-# LLM-уточнитель: модель читает вопрос и, если не хватает ключевой детали
-# (напр. не указана программа для вопроса о баллах), просит уточнить.
-# Срабатывает как fallback после правил needs_clarification.
+
 ENABLE_LLM_CLARIFY = os.getenv("ENABLE_LLM_CLARIFY", "true").lower() == "true"
 
 FAQ_SIMILARITY_THRESHOLD = 0.45

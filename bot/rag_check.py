@@ -163,17 +163,17 @@ def run(qa_pairs: list[dict], with_llm: bool, verbose: bool) -> None:
     print(f"  Через FAQ-кеш:               {n_total - len(rag_rows)}")
     print(f"  Через RAG:                   {len(rag_rows)}")
     print()
-    print(f"  Context recall ≥0.5 (всё):  {ctx_hits}/{n_total} = {ctx_hits/n_total*100:.1f}%")
+    print(f"  Context recall  >=0.5 (всё):  {ctx_hits}/{n_total} = {ctx_hits/n_total*100:.1f}%")
     if rag_rows:
-        print(f"  Context recall ≥0.5 (RAG):  {rag_ctx}/{len(rag_rows)} = {rag_ctx/len(rag_rows)*100:.1f}%")
+        print(f"  Context recall >= 0.5 (RAG):  {rag_ctx}/{len(rag_rows)} = {rag_ctx/len(rag_rows)*100:.1f}%")
     if n_pred:
         print(f"\n  Ответов сгенерировано:       {n_pred}")
         print(f"  Avg ROUGE-1:                 {sum(r1_vals)/n_pred:.3f}")
         print(f"  Avg ROUGE-L:                 {sum(rl_vals)/n_pred:.3f}")
-        print(f"  Answer hit (R1≥0.3):         {ans_hits}/{n_pred} = {ans_hits/n_pred*100:.1f}%")
+        print(f"  Answer hit (R1>=0.3):         {ans_hits}/{n_pred} = {ans_hits/n_pred*100:.1f}%")
 
     if not _ROUGE_OK:
-        print("\n  ⚠  rouge_score не установлен — ROUGE не считался.")
+        print("\n   rouge_score не установлен — ROUGE не считался.")
         print("     Установите: pip install rouge-score")
 
     bad = [r for r in rows if not r["ctx_hit"] and r["source"] == "rag"]

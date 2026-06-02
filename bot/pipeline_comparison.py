@@ -1,25 +1,4 @@
-"""
-pipeline_comparison.py — Сравнение конфигураций пайплайна (накопительное)
-=========================================================================
 
-Тестируемые конфигурации (каждая добавляет компонент к предыдущей):
-  1. Base RAG          — e5-base + ChromaDB, без доп. компонентов
-  2. + Reranker        — добавляет cross-encoder переранжирование
-  3. + Regex Rewrite   — добавляет нормализацию сленга (regex)
-  4. + LLM Decomp      — разбивает запрос на подзапросы, реранк по исходному Q
-  5. + FAQ Cache       — добавляет трёхуровневый кеш перед пайплайном
-  6. + Agentic Loop    — на базе #4: итеративный цикл grade→refine→re-retrieve
-                         (LLM оценивает достаточность контекста и доискивает)
-
-Запуск:
-  python3 pipeline_comparison.py
-  python3 pipeline_comparison.py --questions 50
-  python3 pipeline_comparison.py --output results/
-
-Внимание: конфигурация 4 делает 1 LLM-вызов на вопрос (~1-3с), а конфигурация 6 —
-2-4 LLM-вызова (декомпозиция + grade + опц. refine). На 245 вопросах ожидаемое
-время ~25-35 мин. Для быстрой прикидки используйте --questions 30.
-"""
 
 import sys, os, re, json, time, argparse, logging, statistics
 from pathlib import Path
