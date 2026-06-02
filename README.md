@@ -87,12 +87,10 @@ graph TD
 
 <p align="center">
   <img src="photo/chat_1.png" width="48%" />
-</p>
-<p align="center">
   <img src="photo/chat_2.png" width="48%" />
 </p>
 
-Не возможности зайти в телеграмм, спроси прямо на сайте
+Нет возможности зайти в телеграмм, спроси прямо на сайте
 
 <p align="center">
   <img src="photo/example_of_work_3.PNG" width="98%" />
