@@ -532,7 +532,7 @@ async def _process_question(message, user_id: int, question: str) -> None:
         _stats["cache_hits"][source] += 1
         _add_to_history(user_id, "user", question)
         _add_to_history(user_id, "assistant", cached_answer)
-        sent = await _send_msg_with_vote(message, question, cached_answer, source)
+        sent = await _send_msg_with_vote(message, question, cached_answer, source, lang)
         log_interaction(
             user_id=user_id, question=question,
             route="faq", source=source,
@@ -577,7 +577,7 @@ async def _process_question(message, user_id: int, question: str) -> None:
 
     _add_to_history(user_id, "user", question)
     _add_to_history(user_id, "assistant", answer)
-    sent = await _send_msg_with_vote(message, effective_question, answer, "rag")
+    sent = await _send_msg_with_vote(message, effective_question, answer, "rag", lang)
     log_interaction(
         user_id=user_id, question=question,
         route="rag", source="rag",
@@ -586,13 +586,27 @@ async def _process_question(message, user_id: int, question: str) -> None:
         msg_id=sent.message_id,
     )
 
-async def _send_msg_with_vote(message, question: str, answer: str, source: str):
+_DISCLAIMER = (
+    "\n\n<i>⚠️ Поступариум — это ИИ-консультант и может ошибаться. "
+    "Проверяйте важную информацию на ba.hse.ru "
+    "или в приёмной комиссии (abitur@hse.ru).</i>"
+)
+_DISCLAIMER_EN = (
+    "\n\n<i>⚠️ Postuparium is an AI assistant and can make mistakes. "
+    "Please verify important information at ba.hse.ru "
+    "or with the admissions office (abitur@hse.ru).</i>"
+)
+
+async def _send_msg_with_vote(message, question: str, answer: str, source: str, lang: str = "ru"):
+    disclaimer = _DISCLAIMER_EN if lang == "en" else _DISCLAIMER
     text = _to_html(answer)
-    if len(text) > _MAX_MSG_LEN:
-        cut = text.rfind("\n", 0, _MAX_MSG_LEN - 80)
+    budget = _MAX_MSG_LEN - len(disclaimer)
+    if len(text) > budget:
+        cut = text.rfind("\n", 0, budget - 80)
         if cut < 200:
-            cut = _MAX_MSG_LEN - 80
+            cut = budget - 80
         text = text[:cut] + "\n\n<i>… ответ сокращён. Уточните детали в ba.hse.ru</i>"
+    text += disclaimer
     msg = await message.reply_text(text, parse_mode="HTML", reply_markup=_VOTE_KB)
     if len(_vote_pending) >= _MAX_VOTE_PENDING:
         del _vote_pending[next(iter(_vote_pending))]
@@ -656,6 +670,10 @@ async def _handle_wizard_achievements(message, user_id: int, question: str, calc
     await message.reply_text(_to_html(result), parse_mode="HTML")
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    addressed, _ = _is_addressed_in_group(update, context)
+    if not addressed:
+        return
+
     user_id = update.effective_user.id
     lang = _detect_lang(_user_citizenship.get(user_id, ""))
 
@@ -687,7 +705,6 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     log.info("Voice→text user %d: %s", user_id, question[:80])
-    await update.message.reply_text(f"🎙 <i>Распознано:</i> {question}", parse_mode="HTML")
 
     if not _user_citizenship.get(user_id):
         _pending_question[user_id] = question
@@ -698,9 +715,47 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await _process_question(update.message, user_id, question)
 
 
+def _is_addressed_in_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> tuple[bool, str]:
+    """В группах бот отвечает только если его упомянули @ником или ответили на его сообщение.
+
+    В личных чатах отвечает всегда. Возвращает (отвечать_ли, очищенный_от_@ника_текст).
+    """
+    msg = update.effective_message
+    text = (msg.text or msg.caption or "").strip()
+    chat = update.effective_chat
+    if chat is None or chat.type not in ("group", "supergroup"):
+        return True, text
+
+    bot_username = context.bot.username or ""
+    mention = f"@{bot_username}"
+    reply_to_bot = (
+        msg.reply_to_message is not None
+        and msg.reply_to_message.from_user is not None
+        and msg.reply_to_message.from_user.id == context.bot.id
+    )
+    if bot_username and mention.lower() in text.lower():
+        text = re.sub(re.escape(mention), "", text, flags=re.IGNORECASE).strip()
+        return True, text
+    if reply_to_bot:
+        return True, text
+    return False, ""
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    question = (update.message.text or "").strip()
+    addressed, question = _is_addressed_in_group(update, context)
+    if not addressed:
+        return
+    question = question.strip()
     if not question:
+        chat = update.effective_chat
+        if chat is not None and chat.type in ("group", "supergroup"):
+            bot_username = context.bot.username or "bot"
+            await update.message.reply_text(
+                f"Задайте вопрос вместе с упоминанием — например:\n"
+                f"<code>@{bot_username} какие баллы нужны на ПМИ?</code>\n\n"
+                f"Ask your question together with the mention, e.g.:\n"
+                f"<code>@{bot_username} what scores do I need for the program?</code>",
+                parse_mode="HTML",
+            )
         return
 
     user_id = update.effective_user.id

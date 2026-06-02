@@ -76,15 +76,29 @@ graph TD
 Бот анализирует вопрос, находит релевантные документы и дает точный ответ. Пользователь может оценить качество ответа.
 
 <p align="center">
-  <img src="photo/example_of_work.jpg" width="32%" />
-  <img src="photo/example_of_work_1.jpg" width="32%" />
-  <img src="photo/example_of_work_2.PNG" width="32%" />
+  <img src="photo/new_1.jpg" width="32%" />
+  <img src="photo/new_2.jpg" width="32%" />
+  <img src="photo/new_3.jpg" width="32%" />
 </p>
----
+
+
+
+Можно спрашивать не только в боте, но и в групповом чате 
+
+<p align="center">
+  <img src="photo/chat_1.png" width="48%" />
+</p>
+<p align="center">
+  <img src="photo/chat_2.png" width="48%" />
+</p>
+
+Не возможности зайти в телеграмм, спроси прямо на сайте
 
 <p align="center">
   <img src="photo/example_of_work_3.PNG" width="98%" />
 </p>
+
+
 
 ## Возможности
 - Задавай вопросы как удобно — голосом или текстом
