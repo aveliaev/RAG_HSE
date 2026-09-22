@@ -31,7 +31,7 @@ from config import (
     ADMIN_USER_ID, QUARANTINE_FILE,
     USE_AGENTIC_RAG,
 )
-from faq_cache import lookup as faq_lookup, add_to_dynamic_cache, quarantine_answer, get_cache_stats
+from faq_cache import lookup as faq_lookup, add_to_dynamic_cache, quarantine_answer
 from rag_engine import build_index, check_content, needs_clarification, llm_clarify
 from agentic_rag import agentic_ask
 
@@ -58,6 +58,12 @@ _MAX_VOTE_PENDING = 500
 _user_citizenship: dict[int, str] = {}
 
 _pending_question: dict[int, str] = {}
+
+# Контекст уточнения: исходный вопрос + текст уточнения, который задал бот.
+# На следующем сообщении пользователя мы НЕ уточняем повторно (иначе зацикливание),
+# а склеиваем исходный вопрос с ответом-уточнением и идём в RAG. Эти же данные
+# уходят в лог, чтобы дашборд показал весь тред (вопрос → уточнение → ответ → итог).
+_clarify_pending: dict[int, dict] = {}
 
 _calc_state: dict[int, dict] = {}
 
@@ -129,23 +135,37 @@ def _add_to_history(user_id: int, role: str, content: str) -> None:
 def _get_history(user_id: int) -> list[dict]:
     return list(_history[user_id])
 
-_CLARIFICATION_MARKERS = [
-    "уточните", "на какую программу", "какую программу",
-    "какие места", "вашу ситуацию", "что именно вас интересует",
+def _build_effective_question(question: str, history: list[dict]) -> str:
+    # Раньше тут была склейка с предыдущим вопросом по маркерам ("уточните" и т.п.).
+    # Она ошибочно срабатывала на тексте ОТКАЗА («Уточните на сайте ba.hse.ru»),
+    # из-за чего предыдущий вопрос «протекал» в следующий ответ (дублирование).
+    # Реальные уточнения теперь обрабатываются явным механизмом _clarify_pending,
+    # поэтому здесь просто возвращаем вопрос как есть.
+    return question
+
+# Официальный график поступления — добавляем ссылку к ответам про сроки/даты/процесс подачи.
+_SCHEDULE_LINK = "https://ba.hse.ru/entr"
+_SCHEDULE_TRIGGERS = [
+    "срок", "дедлайн", "до какого числа", "когда подавать", "когда подача",
+    "когда поступ", "когда начина", "когда заканчива", "когда нести", "когда зачисл",
+    "график поступл", "даты поступл", "дата подачи", "календарь поступл", "расписание поступл",
+    "как поступить", "как поступать", "как мне поступить",
+    "подать документ", "подавать документ", "подача документ", "подаю документ",
+    "подаются документ", "подал документ", "подачи документ",
+    "этапы поступл", "процесс поступл", "порядок поступл",
 ]
 
-def _build_effective_question(question: str, history: list[dict]) -> str:
-    if not history:
-        return question
-    last_assistant = next(
-        (m["content"] for m in reversed(history) if m["role"] == "assistant"), ""
-    )
-    if not any(m in last_assistant.lower() for m in _CLARIFICATION_MARKERS):
-        return question
-    prev_user = next(
-        (m["content"] for m in reversed(history) if m["role"] == "user"), ""
-    )
-    return f"{prev_user} — {question}" if prev_user else question
+def _maybe_append_schedule_link(question: str, answer: str, lang: str) -> str:
+    """К ответам про сроки/даты/процесс поступления добавляем официальный график ba.hse.ru/entr."""
+    if "техническая ошибка" in answer.lower():
+        return answer
+    if not any(t in question.lower() for t in _SCHEDULE_TRIGGERS):
+        return answer
+    if _SCHEDULE_LINK in answer:
+        return answer
+    if lang == "en":
+        return answer + f"\n\n📅 Official admission schedule and dates: {_SCHEDULE_LINK}"
+    return answer + f"\n\n📅 Актуальный график и даты поступления: {_SCHEDULE_LINK}"
 
 def _log_dislike(question: str) -> None:
     try:
@@ -218,14 +238,13 @@ WELCOME_TEXT = (
     "• минимальных баллах ЕГЭ и сроках подачи\n"
     "• БВИ, квазибюджете и зелёной волне\n"
     "• индивидуальных достижениях и скидках\n\n"
-    "/reset — сбросить историю · /stats — статистика"
+    "/reset — сбросить историю"
 )
 
 HELP_TEXT = (
     "<b>Команды:</b>\n"
     "/start — приветствие и выбор гражданства\n"
     "/reset — очистить историю\n"
-    "/stats — статистика бота\n"
     "/help — справка\n\n"
     "<b>Как работает:</b>\n"
     "• Кешированные ответы — мгновенно\n"
@@ -285,38 +304,6 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(text[:_MAX_MSG_LEN], parse_mode="HTML")
 
-async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    uptime = datetime.now() - _stats["start_time"]
-    h, rem = divmod(int(uptime.total_seconds()), 3600)
-    m = rem // 60
-
-    hits = _stats["cache_hits"]
-    total_cache = sum(hits.values())
-    total_rag = _stats["rag_calls"]
-    total = total_cache + total_rag
-    pct = round(total_cache / total * 100) if total else 0
-
-    cs = get_cache_stats()
-    pipeline = "agentic-loop" if USE_AGENTIC_RAG else "декомпозиция"
-    text = (
-        f"<b>📊 Статистика</b>\n\n"
-        f"⏱ Uptime: {h}ч {m}м\n"
-        f"⚙️ RAG: {pipeline}\n\n"
-        f"<b>Запросы:</b>\n"
-        f"  Всего: {total}\n"
-        f"  Кеш: {total_cache} ({pct}%)\n"
-        f"    static FAQ: {hits['hash'] + hits['fuzzy']}\n"
-        f"    dynamic: {hits['dynamic']}\n"
-        f"  RAG (Groq): {total_rag}\n\n"
-        f"<b>Оценки:</b>\n"
-        f"  👍 {_stats['likes']}  👎 {_stats['dislikes']}\n\n"
-        f"<b>Кеш:</b>\n"
-        f"  Сохранённых: {cs['dynamic_count']}\n"
-        f"  В блэклисте: {cs['blacklist_count']}\n"
-        f"  Rate-limited: {_stats['rate_limited']}"
-    )
-    await update.message.reply_text(text, parse_mode="HTML")
-
 async def handle_citizenship(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
@@ -362,16 +349,18 @@ async def handle_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.edit_message_reply_markup(reply_markup=None)
 
     if query.data == "action_calc":
-        _calc_state[user_id] = {"step": "subject", "subj_id": None,
-                                 "scores": None, "achievements": set()}
-        await query.message.reply_text(
-            "🧮 <b>Калькулятор конкурсного балла</b>\n\n"
-            "Подберу топ‑3 программы ФКН и сравню с проходными баллами 2024 года.\n\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "<b>Шаг 1 из 3</b> — Какой второй предмет ЕГЭ?",
-            parse_mode="HTML",
-            reply_markup=_build_subject_kb(),
+        text = (
+            "🧮 <b>Калькулятор ЕГЭ</b>\n\n"
+            "⚙️ Этот раздел сейчас находится в разработке. "
+            "Скоро здесь можно будет рассчитать конкурсный балл.\n\n"
+            "А пока задайте мне любой вопрос о поступлении на ФКН — я с радостью отвечу."
+            if lang != "en" else
+            "🧮 <b>EGE Calculator</b>\n\n"
+            "⚙️ This section is currently under development. "
+            "You'll soon be able to calculate your competitive score here.\n\n"
+            "Meanwhile, feel free to ask any question about admission to FCS."
         )
+        await query.message.reply_text(text, parse_mode="HTML")
     else:
         text = (
             "Отлично! Задайте ваш вопрос о поступлении на ФКН — я отвечу."
@@ -542,19 +531,38 @@ async def _process_question(message, user_id: int, question: str) -> None:
         )
         return
 
-    clarification = needs_clarification(question, history)
-    if not clarification:
-        clarification = await asyncio.get_running_loop().run_in_executor(
-            None, llm_clarify, question, history, lang
-        )
-    if clarification:
-        log.info("Clarification needed for user %d", user_id)
-        _add_to_history(user_id, "user", question)
-        _add_to_history(user_id, "assistant", clarification)
-        await message.reply_text(_to_html(clarification), parse_mode="HTML")
-        return
+    # Если это сообщение — ответ на ранее заданное уточнение, повторно НЕ уточняем
+    # (иначе зацикливание), а отвечаем по сути, склеив исходный вопрос с уточнением.
+    clarify_ctx = _clarify_pending.pop(user_id, None)
 
-    effective_question = _build_effective_question(question, history)
+    if clarify_ctx is None:
+        clarification = needs_clarification(question, history)
+        if not clarification:
+            clarification = await asyncio.get_running_loop().run_in_executor(
+                None, llm_clarify, question, history, lang
+            )
+        if clarification:
+            log.info("Clarification needed for user %d", user_id)
+            # запоминаем ИСХОДНЫЙ вопрос и текст уточнения (для склейки и для лога)
+            _clarify_pending[user_id] = {"original": question, "asked": clarification}
+            _add_to_history(user_id, "user", question)
+            _add_to_history(user_id, "assistant", clarification)
+            await message.reply_text(_to_html(clarification), parse_mode="HTML")
+            return
+
+    # По умолчанию в лог уходит сам вопрос; при ответе на уточнение — исходный вопрос
+    # + поля clarify_*, чтобы дашборд собрал весь тред в одну запись.
+    logged_question = question
+    clarify_asked = ""
+    clarify_reply = ""
+    if clarify_ctx:
+        effective_question = f"{clarify_ctx['original']} (уточнение от пользователя: {question})"
+        logged_question = clarify_ctx["original"]
+        clarify_asked = clarify_ctx["asked"]
+        clarify_reply = question
+        log.info("Clarification answered, merged question for user %d", user_id)
+    else:
+        effective_question = _build_effective_question(question, history)
     _stats["rag_calls"] += 1
     log.info("RAG [lang=%s, citizenship=%s] user %d", lang, citizenship or "?", user_id)
 
@@ -575,15 +583,17 @@ async def _process_question(message, user_id: int, question: str) -> None:
         stop_typing.set()
         typing_task.cancel()
 
+    answer = _maybe_append_schedule_link(question, answer, lang)
     _add_to_history(user_id, "user", question)
     _add_to_history(user_id, "assistant", answer)
     sent = await _send_msg_with_vote(message, effective_question, answer, "rag", lang)
     log_interaction(
-        user_id=user_id, question=question,
+        user_id=user_id, question=logged_question,
         route="rag", source="rag",
         answer=answer, sub_queries=meta.get("sub_queries", []),
         lang=lang, latency_ms=(time.monotonic() - t0) * 1000,
         msg_id=sent.message_id,
+        clarify_asked=clarify_asked, clarify_reply=clarify_reply,
     )
 
 _DISCLAIMER = (
@@ -812,7 +822,6 @@ async def post_init(application: Application) -> None:
     await application.bot.set_my_commands([
         BotCommand("start", "Начать / выбор гражданства"),
         BotCommand("reset", "Сбросить историю"),
-        BotCommand("stats", "Статистика"),
         BotCommand("help", "Справка"),
     ])
 
@@ -836,7 +845,6 @@ def main() -> None:
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("reset", cmd_reset))
-    app.add_handler(CommandHandler("stats", cmd_stats))
     app.add_handler(CommandHandler("admin", cmd_admin))
     app.add_handler(CallbackQueryHandler(handle_citizenship, pattern="^citizen_"))
     app.add_handler(CallbackQueryHandler(handle_action, pattern="^action_"))

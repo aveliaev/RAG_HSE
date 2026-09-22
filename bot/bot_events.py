@@ -25,6 +25,8 @@ def log_interaction(
     lang: str,
     latency_ms: float,
     msg_id: int,
+    clarify_asked: str = "",
+    clarify_reply: str = "",
 ) -> None:
     record = {
         "ts": datetime.now().isoformat(timespec="seconds"),
@@ -39,6 +41,11 @@ def log_interaction(
         "latency_ms": round(latency_ms),
         "vote": None,
     }
+    # Если ответ дан после уточнения — сохраняем весь тред, чтобы дашборд показал
+    # исходный вопрос → что бот переспросил → ответ пользователя → финальный ответ.
+    if clarify_asked:
+        record["clarify_asked"] = clarify_asked
+        record["clarify_reply"] = clarify_reply
     try:
         with EVENTS_LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")

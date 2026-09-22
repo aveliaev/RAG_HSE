@@ -259,8 +259,10 @@ else:
 
         route_color = {"faq": "🟢", "rag": "🔵", "calc": "🟠"}.get(route, "⚪")
         lat_str = f"⏱ {latency:.0f}мс" if latency else ""
+        _clar = row.get("clarify_asked")
+        clar_icon = "🔁 " if (isinstance(_clar, str) and _clar.strip()) else ""
         label = (
-            f"{vote_icon} {route_color} `{ts}` [{route}]  "
+            f"{vote_icon} {route_color} {clar_icon}`{ts}` [{route}]  "
             f"{row['question'][:90]}{'…' if len(row['question']) > 90 else ''}  {lat_str}"
         )
 
@@ -270,6 +272,15 @@ else:
             with left:
                 st.markdown("**Вопрос пользователя:**")
                 st.write(row["question"])
+
+                clarify_asked = row.get("clarify_asked")
+                clarify_reply = row.get("clarify_reply")
+                if isinstance(clarify_asked, str) and clarify_asked.strip():
+                    st.markdown("**🔁 Бот запросил уточнение:**")
+                    st.warning(clarify_asked)
+                    st.markdown("**↳ Ответ пользователя на уточнение:**")
+                    st.write(clarify_reply if isinstance(clarify_reply, str) else "")
+                    st.caption("Ниже — финальный ответ бота на исходный вопрос с учётом уточнения.")
 
                 sub_queries = row.get("sub_queries") or []
                 if isinstance(sub_queries, list) and sub_queries:
