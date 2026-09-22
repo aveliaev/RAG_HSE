@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime
 from config import FAQ_SIMILARITY_THRESHOLD, CACHE_FILE, QUARANTINE_FILE
+from privacy import contains_pii, redact_pii
 
 log = logging.getLogger(__name__)
 
@@ -254,6 +255,11 @@ def add_to_dynamic_cache(question: str, answer: str) -> None:
     if _is_fallback_answer(answer):
         log.info("Не кеширую (ответ-заглушка): %r", norm)
         return
+    # Кеш общий для всех пользователей: вопрос с телефоном/почтой/паспортом попал бы
+    # в ответы другим людям.
+    if contains_pii(question) or contains_pii(answer):
+        log.info("Не кеширую (персональные данные в вопросе/ответе)")
+        return
     _DYNAMIC_NORM[norm] = answer
     _save_cache()
 
@@ -267,8 +273,8 @@ def quarantine_answer(question: str, answer: str, source: str) -> None:
         record = {
             "ts": datetime.now().isoformat(timespec="seconds"),
             "source": source,
-            "question": question,
-            "answer": answer,
+            "question": redact_pii(question),
+            "answer": redact_pii(answer),
         }
         with QUARANTINE_FILE.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")

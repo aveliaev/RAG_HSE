@@ -11,7 +11,7 @@ import time
 from telegram import (
     Update, BotCommand,
     InlineKeyboardButton, InlineKeyboardMarkup,
-    InlineQueryResultArticle, InputTextMessageContent,
+    InlineQueryResultArticle, InputTextMessageContent, InlineQueryResultsButton,
 )
 from telegram.ext import (
     Application,
@@ -35,6 +35,10 @@ from faq_cache import lookup as faq_lookup, add_to_dynamic_cache, quarantine_ans
 from rag_engine import build_index, check_content, needs_clarification, llm_clarify
 from agentic_rag import agentic_ask
 from student_rag import build_student_index, student_kb_available, ask_student
+from privacy import (
+    hash_uid, redact_pii, has_consent, give_consent, delete_user_data, prune_old_logs,
+    CONSENT_TEXT, CONSENT_TEXT_EN, privacy_text,
+)
 
 
 if USE_AGENTIC_RAG:
@@ -178,7 +182,7 @@ def _log_dislike(question: str) -> None:
     try:
         with DISLIKE_LOG.open("a", encoding="utf-8") as f:
             ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-            f.write(f"[{ts}] {question}\n")
+            f.write(f"[{ts}] {redact_pii(question)}\n")
     except Exception as e:
         log.warning("Не удалось записать дизлайк: %s", e)
 
@@ -270,8 +274,21 @@ def _role_prompt(lang: str, university: str) -> tuple[str, InlineKeyboardMarkup]
         ]]),
     )
 
+def _consent_prompt(lang: str) -> tuple[str, InlineKeyboardMarkup]:
+    if lang == "en":
+        return CONSENT_TEXT_EN, InlineKeyboardMarkup([[
+            InlineKeyboardButton("✅ Accept", callback_data="consent_yes"),
+            InlineKeyboardButton("📄 Details", callback_data="consent_more"),
+        ]])
+    return CONSENT_TEXT, InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Принимаю", callback_data="consent_yes"),
+        InlineKeyboardButton("📄 Подробнее", callback_data="consent_more"),
+    ]])
+
 def _setup_prompt(user_id: int, lang: str) -> tuple[str, InlineKeyboardMarkup] | None:
-    """Следующий незавершённый шаг выбора (вуз → роль → гражданство) или None, если всё выбрано."""
+    """Следующий незавершённый шаг (согласие → вуз → роль → гражданство) или None, если всё выбрано."""
+    if not has_consent(user_id):
+        return _consent_prompt(lang)
     university = _user_university.get(user_id)
     if not university:
         return _university_prompt(lang)
@@ -346,7 +363,9 @@ HELP_TEXT = (
     "<b>Команды:</b>\n"
     "/start — выбор университета и роли (абитуриент / студент)\n"
     "/reset — очистить историю\n"
-    "/help — справка\n\n"
+    "/help — справка\n"
+    "/privacy — обработка персональных данных\n"
+    "/deletedata — удалить мои данные\n\n"
     "<b>Как работает:</b>\n"
     "• Кешированные ответы — мгновенно\n"
     "• Остальные — поиск по базе знаний + Groq AI\n"
@@ -360,7 +379,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     _reset_user(user_id)
     tg_lang = (update.effective_user.language_code or "")[:2].lower()
     lang = "en" if tg_lang == "en" else "ru"
-    uq, ukb = _university_prompt(lang)
+    uq, ukb = _setup_prompt(user_id, lang)
     await update.message.reply_text(START_TEXT_EN if lang == "en" else START_TEXT, parse_mode="HTML")
     await update.message.reply_text(uq, parse_mode="HTML", reply_markup=ukb)
 
@@ -372,7 +391,7 @@ async def cmd_reset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     _reset_user(user_id)
     tg_lang = (update.effective_user.language_code or "")[:2].lower()
     lang = "en" if tg_lang == "en" else "ru"
-    uq, ukb = _university_prompt(lang)
+    uq, ukb = _setup_prompt(user_id, lang)
     prefix = "✅ History cleared.\n\n" if lang == "en" else "✅ История очищена.\n\n"
     await update.message.reply_text(prefix + uq, parse_mode="HTML", reply_markup=ukb)
 
@@ -402,16 +421,79 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(text[:_MAX_MSG_LEN], parse_mode="HTML")
 
+async def handle_consent(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    lang = "en" if (query.from_user.language_code or "")[:2].lower() == "en" else "ru"
+
+    if query.data == "consent_more":
+        _, kb = _consent_prompt(lang)
+        await query.edit_message_text(privacy_text(lang), parse_mode="HTML", reply_markup=kb)
+        return
+
+    give_consent(user_id)
+    log.info("Consent given by user %s", hash_uid(user_id))
+    text, kb = _setup_prompt(user_id, lang) or _university_prompt(lang)
+    done = "✅ Thank you!" if lang == "en" else "✅ Спасибо!"
+    await query.edit_message_text(f"{done}\n\n{text}", parse_mode="HTML", reply_markup=kb)
+
+async def cmd_privacy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    lang = "en" if (update.effective_user.language_code or "")[:2].lower() == "en" else "ru"
+    await update.message.reply_text(privacy_text(lang), parse_mode="HTML")
+
+async def cmd_deletedata(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    lang = "en" if (update.effective_user.language_code or "")[:2].lower() == "en" else "ru"
+    if lang == "en":
+        text = ("🗑 <b>Delete your data?</b>\n\nYour questions, the bot's answers, your ratings and "
+                "your consent will be deleted. This cannot be undone.")
+        kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton("🗑 Delete", callback_data="delete_yes"),
+            InlineKeyboardButton("Cancel", callback_data="delete_no"),
+        ]])
+    else:
+        text = ("🗑 <b>Удалить ваши данные?</b>\n\nБудут удалены ваши вопросы, ответы бота, оценки "
+                "и согласие на обработку. Отменить это нельзя.")
+        kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton("🗑 Удалить", callback_data="delete_yes"),
+            InlineKeyboardButton("Отмена", callback_data="delete_no"),
+        ]])
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=kb)
+
+async def handle_delete(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    lang = "en" if (query.from_user.language_code or "")[:2].lower() == "en" else "ru"
+
+    if query.data == "delete_no":
+        await query.edit_message_text("Cancelled." if lang == "en" else "Отменено.")
+        return
+
+    removed = delete_user_data(user_id)
+    _reset_user(user_id)
+    log.info("User data deleted for %s: %d records", hash_uid(user_id), removed)
+    await query.edit_message_text(
+        f"✅ Your data has been deleted ({removed} records). Press /start to use the bot again."
+        if lang == "en" else
+        f"✅ Ваши данные удалены (записей: {removed}). Чтобы снова пользоваться ботом, нажмите /start."
+    )
+
 async def handle_university(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
     lang = "en" if (query.from_user.language_code or "")[:2].lower() == "en" else "ru"
 
+    if not has_consent(user_id):
+        text, kb = _consent_prompt(lang)
+        await query.edit_message_text(text, parse_mode="HTML", reply_markup=kb)
+        return
+
     university = query.data.removeprefix("uni_")
     _user_university[user_id] = university
     _user_role.pop(user_id, None)
-    log.info("University set for user %d: %s", user_id, university)
+    log.info("University set for user %s: %s", hash_uid(user_id), university)
     text, kb = _role_prompt(lang, university)
     await query.edit_message_text(text, parse_mode="HTML", reply_markup=kb)
 
@@ -430,7 +512,7 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     role = query.data.removeprefix("role_")
     _user_role[user_id] = role
     _history[user_id].clear()
-    log.info("Role set for user %d: %s", user_id, role)
+    log.info("Role set for user %s: %s", hash_uid(user_id), role)
 
     if role == "applicant":
         cq, ckb = _citizenship_prompt(lang)
@@ -472,7 +554,7 @@ async def handle_citizenship(update: Update, context: ContextTypes.DEFAULT_TYPE)
         kb = _ACTION_KB
 
     await query.edit_message_text(text, parse_mode="HTML", reply_markup=kb)
-    log.info("Citizenship set for user %d: %s", user_id, _user_citizenship[user_id])
+    log.info("Citizenship set for user %s: %s", hash_uid(user_id), _user_citizenship[user_id])
 
     pending_q = _pending_question.pop(user_id, None)
     if pending_q:
@@ -603,6 +685,12 @@ async def handle_vote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 async def handle_inline(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query_text = (update.inline_query.query or "").strip()
+    if not has_consent(update.inline_query.from_user.id):
+        await update.inline_query.answer(
+            [], cache_time=0, is_personal=True,
+            button=InlineQueryResultsButton(text="Открыть бота и принять условия", start_parameter="consent"),
+        )
+        return
     if len(query_text) < 3:
         await update.inline_query.answer([], cache_time=0)
         return
@@ -662,7 +750,7 @@ async def _process_student_question(message, user_id: int, question: str) -> Non
         return
 
     _stats["rag_calls"] += 1
-    log.info("Student RAG [lang=%s] user %d", lang, user_id)
+    log.info("Student RAG [lang=%s] user %s", lang, hash_uid(user_id))
     stop_typing = asyncio.Event()
     typing_task = asyncio.create_task(_keep_typing(message.chat, stop_typing))
     meta: dict = {}
@@ -671,7 +759,7 @@ async def _process_student_question(message, user_id: int, question: str) -> Non
             None, ask_student, question, lang
         )
     except Exception as e:
-        log.error("Student RAG error for user %d: %s", user_id, e)
+        log.error("Student RAG error for user %s: %s", hash_uid(user_id), e)
         answer = "Произошла техническая ошибка. Попробуйте позже."
     finally:
         stop_typing.set()
@@ -705,7 +793,7 @@ async def _process_question(message, user_id: int, question: str) -> None:
 
     calc_answer = try_calculate(question)
     if calc_answer is not None:
-        log.info("Calculator hit for user %d", user_id)
+        log.info("Calculator hit for user %s", hash_uid(user_id))
         _add_to_history(user_id, "user", question)
         _add_to_history(user_id, "assistant", calc_answer)
         await message.reply_text(_to_html(calc_answer), parse_mode="HTML")
@@ -713,7 +801,7 @@ async def _process_question(message, user_id: int, question: str) -> None:
 
     cached_answer, source = faq_lookup(question)
     if cached_answer:
-        log.info("Cache hit [%s] user %d", source, user_id)
+        log.info("Cache hit [%s] user %s", source, hash_uid(user_id))
         _stats["cache_hits"][source] += 1
         _add_to_history(user_id, "user", question)
         _add_to_history(user_id, "assistant", cached_answer)
@@ -738,7 +826,7 @@ async def _process_question(message, user_id: int, question: str) -> None:
                 None, llm_clarify, question, history, lang
             )
         if clarification:
-            log.info("Clarification needed for user %d", user_id)
+            log.info("Clarification needed for user %s", hash_uid(user_id))
             # запоминаем ИСХОДНЫЙ вопрос и текст уточнения (для склейки и для лога)
             _clarify_pending[user_id] = {"original": question, "asked": clarification}
             _add_to_history(user_id, "user", question)
@@ -756,11 +844,11 @@ async def _process_question(message, user_id: int, question: str) -> None:
         logged_question = clarify_ctx["original"]
         clarify_asked = clarify_ctx["asked"]
         clarify_reply = question
-        log.info("Clarification answered, merged question for user %d", user_id)
+        log.info("Clarification answered, merged question for user %s", hash_uid(user_id))
     else:
         effective_question = _build_effective_question(question, history)
     _stats["rag_calls"] += 1
-    log.info("RAG [lang=%s, citizenship=%s] user %d", lang, citizenship or "?", user_id)
+    log.info("RAG [lang=%s, citizenship=%s] user %s", lang, citizenship or "?", hash_uid(user_id))
 
     stop_typing = asyncio.Event()
     typing_task = asyncio.create_task(_keep_typing(message.chat, stop_typing))
@@ -770,7 +858,7 @@ async def _process_question(message, user_id: int, question: str) -> None:
             None, ask_rag, effective_question, history, lang, citizenship
         )
     except Exception as e:
-        log.error("RAG error for user %d: %s", user_id, e)
+        log.error("RAG error for user %s: %s", hash_uid(user_id), e)
         answer = (
             "Произошла техническая ошибка. Попробуйте позже.\n"
             "Контакты: abitur@hse.ru · ba.hse.ru"
@@ -907,12 +995,18 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
+    # До согласия голос не отправляем на распознавание (это уже обработка данных)
+    tg_lang = (update.effective_user.language_code or "")[:2].lower()
+    if not has_consent(user_id):
+        text, kb = _consent_prompt("en" if tg_lang == "en" else "ru")
+        await update.message.reply_text(text, parse_mode="HTML", reply_markup=kb)
+        return
+
     await update.message.chat.send_action(ChatAction.TYPING)
 
     tg_file = await context.bot.get_file(voice.file_id)
     audio_bytes = await tg_file.download_as_bytearray()
 
-    tg_lang = (update.effective_user.language_code or "")[:2].lower()
     stt_lang = "en-US" if tg_lang == "en" else "ru-RU"
     question = await transcribe_ogg(bytes(audio_bytes), lang=stt_lang)
 
@@ -922,7 +1016,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
-    log.info("Voice→text user %d: %s", user_id, question[:80])
+    log.info("Voice→text user %s: %s", hash_uid(user_id), redact_pii(question[:80]))
 
     setup = _setup_prompt(user_id, "en" if tg_lang == "en" else "ru")
     if setup:
@@ -985,7 +1079,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(msg)
         return
 
-    log.info("User %s (%d): %s", user_name, user_id, question[:80])
+    log.info("User %s: %s", hash_uid(user_id), redact_pii(question[:80]))
     await update.message.chat.send_action(ChatAction.TYPING)
 
     if _is_greeting(question):
@@ -1030,6 +1124,8 @@ async def post_init(application: Application) -> None:
         BotCommand("start", "Начать / выбор вуза и роли"),
         BotCommand("reset", "Сбросить историю"),
         BotCommand("help", "Справка"),
+        BotCommand("privacy", "Персональные данные"),
+        BotCommand("deletedata", "Удалить мои данные"),
     ])
 
 def main() -> None:
@@ -1042,6 +1138,7 @@ def main() -> None:
     n = build_index()
     log.info("Индекс готов: %d чанков", n)
     build_student_index()
+    prune_old_logs()
 
     app = (
         Application.builder()
@@ -1054,6 +1151,10 @@ def main() -> None:
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("reset", cmd_reset))
     app.add_handler(CommandHandler("admin", cmd_admin))
+    app.add_handler(CommandHandler("privacy", cmd_privacy))
+    app.add_handler(CommandHandler("deletedata", cmd_deletedata))
+    app.add_handler(CallbackQueryHandler(handle_consent, pattern="^consent_"))
+    app.add_handler(CallbackQueryHandler(handle_delete, pattern="^delete_"))
     app.add_handler(CallbackQueryHandler(handle_university, pattern="^uni_"))
     app.add_handler(CallbackQueryHandler(handle_role, pattern="^role_"))
     app.add_handler(CallbackQueryHandler(handle_citizenship, pattern="^citizen_"))

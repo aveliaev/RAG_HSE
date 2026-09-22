@@ -1,18 +1,11 @@
 import json
-import hashlib
 import logging
 from datetime import datetime
 
 from config import EVENTS_LOG, VOTES_LOG
+from privacy import hash_uid, redact_pii
 
 log = logging.getLogger(__name__)
-
-_SALT = "fkn_hse_bot"
-
-
-def _hash_uid(user_id: int) -> str:
-    return hashlib.sha256(f"{_SALT}{user_id}".encode()).hexdigest()[:12]
-
 
 def log_interaction(
     *,
@@ -30,12 +23,12 @@ def log_interaction(
 ) -> None:
     record = {
         "ts": datetime.now().isoformat(timespec="seconds"),
-        "uid": _hash_uid(user_id),
+        "uid": hash_uid(user_id),
         "msg_id": msg_id,
-        "question": question,
+        "question": redact_pii(question),
         "route": route,
         "source": source,
-        "answer": answer[:800],
+        "answer": redact_pii(answer[:800]),
         "sub_queries": sub_queries,
         "lang": lang,
         "latency_ms": round(latency_ms),
@@ -45,7 +38,7 @@ def log_interaction(
     # исходный вопрос → что бот переспросил → ответ пользователя → финальный ответ.
     if clarify_asked:
         record["clarify_asked"] = clarify_asked
-        record["clarify_reply"] = clarify_reply
+        record["clarify_reply"] = redact_pii(clarify_reply)
     try:
         with EVENTS_LOG.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")

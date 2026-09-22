@@ -74,3 +74,13 @@ WEBHOOK_PORT = int(os.getenv("PORT", "8443"))
 
 EVENTS_LOG = DATA_DIR / "bot_events.jsonl"
 VOTES_LOG = DATA_DIR / "bot_votes.jsonl"
+
+# --- Персональные данные ---
+# Соль для хеширования Telegram ID в логах. ОБЯЗАТЕЛЬНО задать своё случайное значение
+# в .env: без секретной соли хеш обращается перебором (Telegram ID — просто число).
+LOG_SALT = os.getenv("LOG_SALT", "")
+# Сколько дней хранить логи диалогов (bot_events.jsonl, bot_votes.jsonl). 0 — бессрочно.
+LOG_RETENTION_DAYS = int(os.getenv("LOG_RETENTION_DAYS", "180"))
+# Контакт для вопросов о персональных данных (показывается в /privacy)
+PRIVACY_CONTACT = os.getenv("PRIVACY_CONTACT", "")
+CONSENTS_FILE = DATA_DIR / "consents.json"
