@@ -1,13 +1,15 @@
 services:
   bot:
     build: .
+    image: fkn-bot
     env_file: bot/.env
     volumes:
       - bot-data:/data
     restart: unless-stopped
 
   dashboard:
-    build: .
+    # тот же образ, что у бота, — не собираем и не распаковываем его второй раз
+    image: fkn-bot
     command: ["streamlit", "run", "live_dashboard.py",
               "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
     volumes:
