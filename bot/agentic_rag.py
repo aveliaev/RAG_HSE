@@ -6,7 +6,7 @@ from config import (
     USE_YANDEX, YANDEX_API_KEY, YANDEX_FOLDER_ID,
     GROQ_API_KEY, GROQ_MODEL,
 )
-from rag_engine import retrieve_k, generate, yandex_complete
+from rag_engine import retrieve_k, generate, yandex_complete, context_is_relevant
 
 log = logging.getLogger(__name__)
 
@@ -122,7 +122,48 @@ def _rule_split(question: str) -> list[str] | None:
             return [parts[0].strip(), parts[1].strip()]
     return None
 
-def decompose_query(question: str) -> list[str]:
+# Категориальные маркеры → гарантированный точечный под-запрос к профильному
+# документу. Нужны, потому что длинная естественная фраза («иностранец с ОВЗ,
+# какие документы и сроки») в эмбеддинге тонет в общих словах «документы/сроки»
+# и не достаёт чанки fkn_foreign_rag / fkn_ovz_rag. Эти под-запросы добавляются
+# ДОПОЛНИТЕЛЬНО к результату LLM-декомпозиции и не зависят от её капризов.
+_CATEGORY_QUERIES: list[tuple[list[str], str]] = [
+    (
+        ["иностран", "зарубеж", "гражданин другой стран", "из казахстан",
+         "из беларус", "из украин", "снг", "квота для иностран"],
+        "вступительные испытания и документы для иностранных граждан ФКН ВШЭ, "
+        "отдельный конкурс, сроки подачи документов",
+    ),
+    (
+        ["овз", "инвалид", "слеп", "глух", "слабовид", "слабослыш",
+         "нарушени", "ассистент", "опорно-двигат", "сурдоперевод"],
+        "особые условия вступительных испытаний для лиц с ОВЗ и инвалидов ВШЭ, "
+        "как указать в заявлении, формат проведения",
+    ),
+]
+
+def _category_queries(question: str) -> list[str]:
+    q = question.lower()
+    out: list[str] = []
+    for triggers, query in _CATEGORY_QUERIES:
+        if any(t in q for t in triggers):
+            out.append(query)
+    return out
+
+def _augment_categories(question: str, base: list[str]) -> list[str]:
+    """Ставит точечные под-запросы по категориям (иностранцы, ОВЗ) ПЕРВЫМИ, чтобы
+    профильные чанки заняли приоритетные слоты контекста и не вытеснялись базовыми
+    под-запросами LLM. Дедупликация по нормализованному тексту, итог ≤ 5."""
+    result: list[str] = []
+    seen: set[str] = set()
+    for cq in _category_queries(question) + list(base):
+        key = cq.lower().strip()
+        if key and key not in seen:
+            result.append(cq)
+            seen.add(key)
+    return result[:5]
+
+def _decompose_base(question: str) -> list[str]:
     try:
         raw = _llm_call(_DECOMPOSE_PROMPT, f"Вопрос: {question}")
         queries = _parse_queries(raw)
@@ -141,6 +182,9 @@ def decompose_query(question: str) -> list[str]:
     if split:
         return split
     return [question]
+
+def decompose_query(question: str) -> list[str]:
+    return _augment_categories(question, _decompose_base(question))
 
 def agentic_retrieve(question: str, chunks_per_query: int = 4) -> str:
     queries = decompose_query(question)
@@ -186,7 +230,9 @@ def agentic_ask(
 
     meta = {"sub_queries": queries, "n_chunks": len(unique_chunks)}
 
-    if not unique_chunks:
+    # Порог релевантности: нерелевантный контекст в генерацию не отдаём.
+    if not unique_chunks or not context_is_relevant(unique_chunks):
+        meta["low_relevance"] = bool(unique_chunks)
         if lang == "en":
             answer = (
                 "No information found in the knowledge base for this question. "

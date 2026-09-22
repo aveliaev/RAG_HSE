@@ -5,7 +5,7 @@ import logging
 import re
 
 from config import AGENTIC_MAX_ITERS
-from rag_engine import retrieve_k, generate
+from rag_engine import retrieve_k, generate, context_is_relevant
 from agentic_rag import _llm_call, decompose_query
 
 log = logging.getLogger(__name__)
@@ -138,7 +138,10 @@ def agentic_loop_ask(
         "mode": "agentic-loop",
     }
 
-    if not chunks:
+    # Порог релевантности: если даже лучший чанк не дотянул — честно отказываем,
+    # не отдаём нерелевантный контекст в генерацию (защита от галлюцинаций на вопросах вне базы).
+    if not chunks or not context_is_relevant(chunks):
+        meta["low_relevance"] = bool(chunks)
         if lang == "en":
             answer = (
                 "No information found in the knowledge base for this question. "

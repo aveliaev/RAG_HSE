@@ -9,7 +9,7 @@ from config import (
     GROQ_API_KEY, GROQ_MODEL, RAG_TOP_K, DOCS_DIR,
     YANDEX_API_KEY, YANDEX_FOLDER_ID, YANDEX_MODEL, USE_YANDEX,
     ENABLE_LLM_REWRITE, EMBED_MODEL, RERANKER_MODEL, ENABLE_RERANKER,
-    CHROMA_DIR, ENABLE_LLM_CLARIFY,
+    CHROMA_DIR, ENABLE_LLM_CLARIFY, RELEVANCE_MIN_SCORE,
 )
 from knowledge_base import SYSTEM_PROMPT
 
@@ -369,9 +369,44 @@ _CLARIFICATION_RULES = [
         "needs_program": False,
         "question": "Уточните:\n— Вы рассматриваете бюджетные места?\n— Или платные места?\n\nСроки подачи документов для них разные.",
     },
+    {
+        # Расплывчатое намерение поступать без указания программы
+        # («хочу на бюджет», «хочу поступить»). Без программы ответ получается
+        # неинформативным или модель выбирает программу наугад — поэтому переспрашиваем.
+        "triggers": ["хочу на бюджет", "хочу на платн", "хочу поступ", "хочу учиться",
+                     "хочу подать", "планирую поступ", "собираюсь поступ",
+                     "как мне поступить", "хочу к вам"],
+        "excludes": [],
+        "needs_program": True,
+        "question": (
+            "Уточните, пожалуйста, на какую программу ФКН вы планируете поступать?\n"
+            f"({_PROGRAMS_HINT})\n\n"
+            "От программы зависят экзамены, минимальные баллы и условия."
+        ),
+    },
 ]
 
 _ASKED_MARKERS = ["уточните", "на какую программу", "какую программу", "какие места"]
+
+# Вопросы, ответ на которые НЕ зависит от программы (контакты, способы/порядок
+# подачи документов, общий процесс поступления). По ним уточнять программу не нужно —
+# иначе бот раздражающе переспрашивает на общий вопрос.
+_PROGRAM_INDEPENDENT_PATTERNS = [
+    r"кому (можно )?(написать|обратиться|позвонить|звонить)",
+    r"куда (можно )?(написать|обратиться|позвонить|звонить)",
+    r"с кем (можно )?связаться",
+    r"контакт", r"телефон приёмн|телефон приемн", r"почт[ауеы] приёмн|почт[ауеы] приемн",
+    r"email|e-mail|электронн\w* почт",
+    r"как (можно )?(подать|подавать|отправить|нести|принести|загрузить) документ",
+    r"куда (можно )?(подать|подавать|отправить|нести|принести) документ",
+    r"способ\w* подачи", r"порядок подачи", r"как подаю?тся документ",
+    r"какие документы (нужн|нужно|подавать|предоставить|собрать|приносить)",
+    r"процесс поступлени", r"порядок поступлени", r"этапы поступлени",
+]
+
+def _is_program_independent(question: str) -> bool:
+    q = question.lower()
+    return any(re.search(p, q) for p in _PROGRAM_INDEPENDENT_PATTERNS)
 
 def _program_mentioned(text: str) -> bool:
     t = text.lower()
@@ -380,6 +415,11 @@ def _program_mentioned(text: str) -> bool:
 def needs_clarification(question: str, history: list[dict]) -> str | None:
     q = question.lower()
     dialog = " ".join(m["content"].lower() for m in history) + " " + q
+
+    # Общий, программно-независимый вопрос (контакты, подача документов, процесс) —
+    # программу не уточняем.
+    if _is_program_independent(question):
+        return None
 
     last_bot = next((m["content"].lower() for m in reversed(history) if m["role"] == "assistant"), "")
     if any(m in last_bot for m in _ASKED_MARKERS):
@@ -410,6 +450,9 @@ _CLARIFY_PROMPT = (
     "- спрашивают про сроки подачи или зачисление — но не ясно, бюджет или платное.\n\n"
     "Уточнение НЕ нужно, если:\n"
     "- вопрос общий по сути (что такое квазибюджет, как работает БВИ, перечисли программы, сравни X и Y);\n"
+    "- ответ НЕ зависит от программы: контакты приёмной комиссии (кому/куда написать, телефон, почта), "
+    "способы и порядок подачи документов, какие документы нужны, общий процесс/этапы поступления, "
+    "общежитие, военный учёт — по таким вопросам программу спрашивать НЕ надо;\n"
     "- нужная деталь уже есть в вопросе ИЛИ в предыдущем диалоге.\n\n"
     "Ответь СТРОГО так:\n"
     "- если всё понятно для ответа — ровно одно слово: OK\n"
@@ -440,9 +483,17 @@ def llm_clarify(question: str, history: list[dict], lang: str = "ru") -> str | N
     if not ENABLE_LLM_CLARIFY or not (USE_YANDEX or GROQ_API_KEY):
         return None
 
-    # Не зацикливаемся: если бот только что сам задал вопрос — юзер сейчас отвечает на него.
+    # Общий, программно-независимый вопрос — программу не уточняем (детерминированно,
+    # не полагаясь на LLM, который раньше переспрашивал даже про контакты/подачу документов).
+    if _is_program_independent(question):
+        return None
+
+    # Не зацикливаемся: если бот только что сам задал уточнение — юзер сейчас отвечает
+    # на него, повторно уточнять нельзя. Уточнения могут кончаться и на «.», поэтому
+    # проверяем и знак вопроса, и маркеры уточнения.
     last_bot = next((m["content"] for m in reversed(history) if m["role"] == "assistant"), "")
-    if last_bot.rstrip().endswith("?"):
+    last_bot_l = last_bot.lower()
+    if last_bot.rstrip().endswith("?") or any(m in last_bot_l for m in _ASKED_MARKERS):
         return None
 
     hist_txt = ""
@@ -478,12 +529,27 @@ if ENABLE_RERANKER:
         log.warning("Reranker недоступен (%s), работаем без него", e)
 
 def _rerank(query: str, chunks: list[dict], top_k: int) -> list[dict]:
-    if _reranker is None or len(chunks) <= top_k:
+    if _reranker is None or not chunks:
         return chunks[:top_k]
     pairs = [(query, c["text"]) for c in chunks]
     scores = _reranker.predict(pairs, show_progress_bar=False)
     ranked = sorted(zip(scores, chunks), key=lambda x: x[0], reverse=True)
-    return [c for _, c in ranked[:top_k]]
+    # Прикрепляем score реранкера к чанку — нужно для порога релевантности выше по стеку.
+    out = []
+    for s, c in ranked[:top_k]:
+        c["rerank_score"] = float(s)
+        out.append(c)
+    return out
+
+def context_is_relevant(chunks: list[dict]) -> bool:
+    """True, если хотя бы один чанк прошёл порог релевантности реранкера.
+    Если реранкер выключен (у чанков нет score) — не блокируем (возвращаем True)."""
+    if not chunks:
+        return False
+    scores = [c["rerank_score"] for c in chunks if "rerank_score" in c]
+    if not scores:
+        return True
+    return max(scores) >= RELEVANCE_MIN_SCORE
 
 _REWRITE_PROMPT = (
     "Ты помогаешь улучшить поисковый запрос для базы знаний о поступлении на ФКН НИУ ВШЭ.\n"
@@ -542,18 +608,36 @@ def retrieve(query: str) -> str:
     parts = [f"[{c['source']} / {c['heading']}]\n{c['text']}" for c in chunks]
     return "\n\n---\n\n".join(parts)
 
+def _dedup_key(text: str) -> str:
+    """Ключ дедупликации: тело чанка без markdown-заголовков и схлопнутыми пробелами.
+    Цель — убрать повторяющиеся служебные подсекции (напр. одинаковые сроки «Приём по
+    вступительным испытаниям ВШЭ», продублированные в каждой из 8 программ): тело у них
+    идентично, различается лишь префикс с названием программы. Программо-специфичные
+    чанки (баллы ЕГЭ и т.п.) имеют разное тело и не схлопываются."""
+    lines = [ln.strip() for ln in text.splitlines()
+             if ln.strip() and not ln.lstrip().startswith("#")]
+    return re.sub(r"\s+", " ", " ".join(lines)).lower()
+
 def retrieve_k(query: str, k: int = 5, skip_llm_rewrite: bool = False) -> list[dict]:
     rewritten = _rewrite_query(query)
     if not skip_llm_rewrite and ENABLE_LLM_REWRITE and (USE_YANDEX or GROQ_API_KEY):
         rewritten = _rewrite_query_llm(rewritten)
 
-    n_candidates = max(k * 2, RAG_TOP_K)
+    # Берём пул шире, чем k: дедупликация ниже выкидывает повторы, и без запаса
+    # reranker мог бы остаться с менее чем k уникальных чанков.
+    n_candidates = max(k * 3, RAG_TOP_K * 2)
+    n_candidates = min(n_candidates, _collection.count())
     prefixed_query = _E5_QUERY_PREFIX + rewritten
     results = _collection.query(query_texts=[prefixed_query], n_results=n_candidates)
 
     candidates = []
+    seen_keys: set[str] = set()
     for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
         clean_doc = doc[len(_E5_DOC_PREFIX):] if doc.startswith(_E5_DOC_PREFIX) else doc
+        key = _dedup_key(clean_doc)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
         candidates.append({
             "text": clean_doc,
             "source": meta["source"],
@@ -618,15 +702,19 @@ def generate(
         "Дай чёткий ответ строго по контексту выше."
     )
 
+    # ВАЖНО: историю диалога НЕ передаём в модель. Факты берутся строго из
+    # КОНТЕКСТА (RAG). Раньше прошлые ответы из истории «протекали» в ответ —
+    # напр. предыдущий ответ про баллы ПАД подменял ответ на вопрос про ОВЗ.
+    # Связь с уточняющими переспросами сохраняется через _build_effective_question
+    # в bot.py (предыдущий вопрос уже вшит в текст запроса).
     if USE_YANDEX:
-        msgs = [{"role": m["role"], "content": m["content"]} for m in history[-10:]]
-        msgs.append({"role": "user", "content": user_content})
+        msgs = [{"role": "user", "content": user_content}]
         return yandex_complete(msgs, system=system, max_tokens=600, temperature=0.3)
 
-    messages = [{"role": "system", "content": system}]
-    for msg in history[-10:]:
-        messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": user_content})
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_content},
+    ]
 
     response = _groq.chat.completions.create(
         model=GROQ_MODEL,

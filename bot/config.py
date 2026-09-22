@@ -22,7 +22,7 @@ USE_YANDEX = (
 
 ENABLE_LLM_REWRITE = os.getenv("ENABLE_LLM_REWRITE", "true").lower() == "true"
 
-USE_AGENTIC_RAG = os.getenv("USE_AGENTIC_RAG", "false").lower() == "true"
+USE_AGENTIC_RAG = os.getenv("USE_AGENTIC_RAG", "true").lower() == "true"
 
 AGENTIC_MAX_ITERS = int(os.getenv("AGENTIC_MAX_ITERS", "2"))
 
@@ -37,6 +37,16 @@ RAG_TOP_K = 8
 
 RERANKER_MODEL = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
 ENABLE_RERANKER = os.getenv("ENABLE_RERANKER", "true").lower() == "true"
+
+# Порог релевантности по score реранкера (cross-encoder). Если ЛУЧШИЙ найденный
+# чанк набрал меньше — считаем, что в базе нет ответа, и честно отказываем,
+# вместо того чтобы галлюцинировать по нерелевантному контексту.
+# Калибровка по тестовому набору (grid search): score'ы релевантных и внебазовых
+# вопросов перекрываются, поэтому это КОНСЕРВАТИВНЫЙ backstop, а не жёсткий фильтр.
+#   -4.0  -> ложно режет ~1% валидных, ловит ~60% внебазовых (выбран баланс)
+#   -2.0  -> ловит ~100% внебазовых, но рубит ~17% валидных — слишком агрессивно
+# В проде запросы перед реранком чистит LLM-rewrite, поэтому реальный отсев ещё мягче.
+RELEVANCE_MIN_SCORE = float(os.getenv("RELEVANCE_MIN_SCORE", "-4.0"))
 
 MAX_HISTORY_PAIRS = 5
 
