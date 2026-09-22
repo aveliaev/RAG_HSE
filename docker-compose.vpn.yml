@@ -1,0 +1,32 @@
+# Бот выходит в интернет через OpenVPN — нужно на серверах в РФ, откуда api.telegram.org
+# недоступен. Подключается поверх основного файла:
+#   docker compose -f docker-compose.yml -f docker-compose.vpn.yml up -d
+# или один раз прописать в .env в корне проекта:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.vpn.yml
+# Конфиг VPN кладётся в vpn/client.ovpn (в git не коммитится).
+services:
+  vpn:
+    build: vpn
+    image: fkn-vpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    # внутренний DNS облака через туннель недоступен — используем публичные
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    volumes:
+      - ./vpn/client.ovpn:/vpn/client.ovpn:ro
+    healthcheck:
+      test: ["CMD", "ip", "link", "show", "tun0"]
+      interval: 10s
+      retries: 12
+    restart: unless-stopped
+
+  bot:
+    network_mode: "service:vpn"
+    depends_on:
+      vpn:
+        condition: service_healthy
+        restart: true

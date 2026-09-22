@@ -48,6 +48,8 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=logging.INFO,
 )
+# httpx на INFO пишет каждый запрос с полным URL, а в URL Telegram API — токен бота
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 _history: dict[int, list[dict]] = defaultdict(list)

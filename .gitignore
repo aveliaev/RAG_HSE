@@ -34,3 +34,6 @@ bot/chroma_db/
 
 # Секреты
 .env
+
+# Конфиг VPN (содержит ключи)
+vpn/*.ovpn
