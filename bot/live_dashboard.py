@@ -32,8 +32,8 @@ with st.sidebar:
     st.divider()
     route_filter = st.multiselect(
         "Фильтр по маршруту",
-        options=["faq", "rag", "calc"],
-        default=["faq", "rag", "calc"],
+        options=["faq", "rag", "calc", "student"],
+        default=["faq", "rag", "calc", "student"],
     )
     vote_filter = st.radio(
         "Фильтр по оценке",
@@ -259,7 +259,7 @@ else:
         else:
             vote_icon = "⬜"
 
-        route_color = {"faq": "🟢", "rag": "🔵", "calc": "🟠"}.get(route, "⚪")
+        route_color = {"faq": "🟢", "rag": "🔵", "calc": "🟠", "student": "🟣"}.get(route, "⚪")
         lat_str = f"⏱ {latency:.0f}мс" if latency else ""
         _clar = row.get("clarify_asked")
         clar_icon = "🔁 " if (isinstance(_clar, str) and _clar.strip()) else ""

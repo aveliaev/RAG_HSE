@@ -4,6 +4,8 @@ from pathlib import Path
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
 
 DOCS_DIR = Path(__file__).parent.parent / "dataset"
+# База знаний для студентов ВШЭ (ветка «Студент»). Пустая папка — ветка «в разработке».
+STUDENT_DOCS_DIR = DOCS_DIR / "students"
 
 # Куда бот пишет изменяемые данные (кеш, логи, индекс). На сервере в Docker
 # задаётся через DATA_DIR и монтируется как volume, чтобы переживать пересборку.

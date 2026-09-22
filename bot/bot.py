@@ -34,6 +34,7 @@ from config import (
 from faq_cache import lookup as faq_lookup, add_to_dynamic_cache, quarantine_answer
 from rag_engine import build_index, check_content, needs_clarification, llm_clarify
 from agentic_rag import agentic_ask
+from student_rag import build_student_index, student_kb_available, ask_student
 
 
 if USE_AGENTIC_RAG:
@@ -56,6 +57,10 @@ _history: dict[int, list[dict]] = defaultdict(list)
 
 _vote_pending: dict[int, tuple[str, str, str]] = {}
 _MAX_VOTE_PENDING = 500
+
+# Выбор в начале диалога: университет → роль (абитуриент/студент) → (для абитуриента) гражданство
+_user_university: dict[int, str] = {}
+_user_role: dict[int, str] = {}
 
 _user_citizenship: dict[int, str] = {}
 
@@ -232,6 +237,95 @@ def _citizenship_prompt(lang: str) -> tuple[str, InlineKeyboardMarkup]:
         return CITIZENSHIP_QUESTION_EN, _CITIZENSHIP_KB_EN
     return CITIZENSHIP_QUESTION, _CITIZENSHIP_KB
 
+# Университеты, для которых есть бот. Новый вуз = новая строка (id, подпись ru, подпись en).
+_UNIVERSITIES = [
+    ("hse", "🎓 НИУ ВШЭ", "🎓 HSE University"),
+]
+_UNIVERSITY_NAMES = {uid: ru.split(" ", 1)[1] for uid, ru, _ in _UNIVERSITIES}
+
+def _university_prompt(lang: str) -> tuple[str, InlineKeyboardMarkup]:
+    kb = InlineKeyboardMarkup([[
+        InlineKeyboardButton(en if lang == "en" else ru, callback_data=f"uni_{uid}")
+        for uid, ru, en in _UNIVERSITIES
+    ]])
+    if lang == "en":
+        return "<b>Choose your university:</b>", kb
+    return "<b>Выберите университет:</b>", kb
+
+def _role_prompt(lang: str, university: str) -> tuple[str, InlineKeyboardMarkup]:
+    name = _UNIVERSITY_NAMES.get(university, university)
+    if lang == "en":
+        return (
+            f"✅ University: <b>{name}</b>\n\n<b>Who are you?</b>",
+            InlineKeyboardMarkup([[
+                InlineKeyboardButton("📝 Applicant", callback_data="role_applicant"),
+                InlineKeyboardButton("🎓 Student", callback_data="role_student"),
+            ]]),
+        )
+    return (
+        f"✅ Университет: <b>{name}</b>\n\n<b>Вы абитуриент или студент?</b>",
+        InlineKeyboardMarkup([[
+            InlineKeyboardButton("📝 Абитуриент", callback_data="role_applicant"),
+            InlineKeyboardButton("🎓 Студент", callback_data="role_student"),
+        ]]),
+    )
+
+def _setup_prompt(user_id: int, lang: str) -> tuple[str, InlineKeyboardMarkup] | None:
+    """Следующий незавершённый шаг выбора (вуз → роль → гражданство) или None, если всё выбрано."""
+    university = _user_university.get(user_id)
+    if not university:
+        return _university_prompt(lang)
+    role = _user_role.get(user_id)
+    if not role:
+        return _role_prompt(lang, university)
+    if role == "applicant" and not _user_citizenship.get(user_id):
+        return _citizenship_prompt(lang)
+    return None
+
+def _reset_user(user_id: int) -> None:
+    _history[user_id].clear()
+    _user_university.pop(user_id, None)
+    _user_role.pop(user_id, None)
+    _user_citizenship[user_id] = ""
+    _pending_question.pop(user_id, None)
+    _clarify_pending.pop(user_id, None)
+    _calc_state.pop(user_id, None)
+
+START_TEXT = (
+    "Привет! Я <b>Поступариум</b> — ИИ-консультант для абитуриентов и студентов 🎓\n\n"
+    "Для начала выберите университет и расскажите, кто вы.\n\n"
+    "/start — начать заново · /reset — сбросить историю"
+)
+START_TEXT_EN = (
+    "Hi! I'm <b>Postuparium</b> — an AI assistant for applicants and students 🎓\n\n"
+    "First, choose your university and tell me who you are.\n\n"
+    "/start — start over · /reset — clear history"
+)
+
+STUDENT_READY_TEXT = (
+    "✅ Роль: <b>🎓 Студент ВШЭ</b>\n\n"
+    "Задайте вопрос об учёбе: пересдачи, стипендии, академический отпуск, майноры и т. п."
+)
+STUDENT_READY_TEXT_EN = (
+    "✅ Role: <b>🎓 HSE student</b>\n\n"
+    "Ask a question about your studies: retakes, scholarships, academic leave, minors, etc."
+)
+STUDENT_WIP_TEXT = (
+    "✅ Роль: <b>🎓 Студент ВШЭ</b>\n\n"
+    "⚙️ Раздел для студентов сейчас в разработке — база знаний ещё наполняется.\n\n"
+    "Если вы поступаете в ВШЭ — нажмите /start и выберите «Абитуриент»."
+)
+STUDENT_WIP_TEXT_EN = (
+    "✅ Role: <b>🎓 HSE student</b>\n\n"
+    "⚙️ The student section is under development — the knowledge base is being filled.\n\n"
+    "If you're applying to HSE, press /start and choose “Applicant”."
+)
+
+def _student_intro(lang: str) -> str:
+    if student_kb_available():
+        return STUDENT_READY_TEXT_EN if lang == "en" else STUDENT_READY_TEXT
+    return STUDENT_WIP_TEXT_EN if lang == "en" else STUDENT_WIP_TEXT
+
 WELCOME_TEXT = (
     "Привет! Я бот-консультант по поступлению на "
     "<b>Факультет компьютерных наук НИУ ВШЭ</b> 🎓\n\n"
@@ -239,13 +333,18 @@ WELCOME_TEXT = (
     "• программах ФКН (ПМИ, ПАД, КНАД, ЭАД и другие)\n"
     "• минимальных баллах ЕГЭ и сроках подачи\n"
     "• БВИ, квазибюджете и зелёной волне\n"
-    "• индивидуальных достижениях и скидках\n\n"
-    "/reset — сбросить историю"
+    "• индивидуальных достижениях и скидках"
+)
+
+WELCOME_TEXT_EN = (
+    "I'll help with admission to the "
+    "<b>Faculty of Computer Science, HSE University</b> 🎓\n\n"
+    "Ask me about programmes, exam scores, deadlines, olympiads and discounts."
 )
 
 HELP_TEXT = (
     "<b>Команды:</b>\n"
-    "/start — приветствие и выбор гражданства\n"
+    "/start — выбор университета и роли (абитуриент / студент)\n"
     "/reset — очистить историю\n"
     "/help — справка\n\n"
     "<b>Как работает:</b>\n"
@@ -258,27 +357,24 @@ HELP_TEXT = (
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    _history[user_id].clear()
-    _user_citizenship[user_id] = ""
+    _reset_user(user_id)
     tg_lang = (update.effective_user.language_code or "")[:2].lower()
     lang = "en" if tg_lang == "en" else "ru"
-    cq, ckb = _citizenship_prompt(lang)
-    await update.message.reply_text(WELCOME_TEXT, parse_mode="HTML")
-    await update.message.reply_text(cq, parse_mode="HTML", reply_markup=ckb)
+    uq, ukb = _university_prompt(lang)
+    await update.message.reply_text(START_TEXT_EN if lang == "en" else START_TEXT, parse_mode="HTML")
+    await update.message.reply_text(uq, parse_mode="HTML", reply_markup=ukb)
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(HELP_TEXT, parse_mode="HTML")
 
 async def cmd_reset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    _history[user_id].clear()
-    _user_citizenship[user_id] = ""
-    _pending_question.pop(user_id, None)
+    _reset_user(user_id)
     tg_lang = (update.effective_user.language_code or "")[:2].lower()
     lang = "en" if tg_lang == "en" else "ru"
-    cq, ckb = _citizenship_prompt(lang)
+    uq, ukb = _university_prompt(lang)
     prefix = "✅ History cleared.\n\n" if lang == "en" else "✅ История очищена.\n\n"
-    await update.message.reply_text(prefix + cq, parse_mode="HTML", reply_markup=ckb)
+    await update.message.reply_text(prefix + uq, parse_mode="HTML", reply_markup=ukb)
 
 async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not ADMIN_USER_ID or update.effective_user.id != ADMIN_USER_ID:
@@ -305,6 +401,48 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             continue
 
     await update.message.reply_text(text[:_MAX_MSG_LEN], parse_mode="HTML")
+
+async def handle_university(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    lang = "en" if (query.from_user.language_code or "")[:2].lower() == "en" else "ru"
+
+    university = query.data.removeprefix("uni_")
+    _user_university[user_id] = university
+    _user_role.pop(user_id, None)
+    log.info("University set for user %d: %s", user_id, university)
+    text, kb = _role_prompt(lang, university)
+    await query.edit_message_text(text, parse_mode="HTML", reply_markup=kb)
+
+async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    lang = "en" if (query.from_user.language_code or "")[:2].lower() == "en" else "ru"
+
+    if not _user_university.get(user_id):
+        # кнопка из старого сообщения после /reset — начинаем выбор заново
+        uq, ukb = _university_prompt(lang)
+        await query.edit_message_text(uq, parse_mode="HTML", reply_markup=ukb)
+        return
+
+    role = query.data.removeprefix("role_")
+    _user_role[user_id] = role
+    _history[user_id].clear()
+    log.info("Role set for user %d: %s", user_id, role)
+
+    if role == "applicant":
+        cq, ckb = _citizenship_prompt(lang)
+        welcome = WELCOME_TEXT_EN if lang == "en" else WELCOME_TEXT
+        await query.edit_message_text(welcome + "\n\n" + cq, parse_mode="HTML", reply_markup=ckb)
+        return
+
+    await query.edit_message_text(_student_intro(lang), parse_mode="HTML")
+    pending_q = _pending_question.pop(user_id, None)
+    if pending_q and student_kb_available():
+        log.info("Processing pending student question: '%s'", pending_q[:60])
+        await _process_question(query.message, user_id, pending_q)
 
 async def handle_citizenship(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -428,7 +566,9 @@ async def handle_vote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         log_vote(msg_id, "up")
         if pending:
             q, a, src = pending
-            if src == "rag":
+            if src == "student":
+                log.info("Vote 👍 (student): '%s'", q[:60])
+            elif src == "rag":
                 add_to_dynamic_cache(q, a)
                 log.info("Vote 👍 (RAG→cache): '%s'", q[:60])
             else:
@@ -440,7 +580,13 @@ async def handle_vote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         log_vote(msg_id, "down")
         if pending:
             q, a, src = pending
-            if src == "rag":
+            if src == "student":
+                _log_dislike(q)
+                log.info("Vote 👎 (student): '%s'", q[:60])
+                await query.message.reply_text(
+                    "👎 Понял. Попробуйте переформулировать вопрос или уточните в учебном офисе."
+                )
+            elif src == "rag":
                 _log_dislike(q)
                 log.info("Vote 👎 (RAG): '%s'", q[:60])
                 await query.message.reply_text(
@@ -498,7 +644,55 @@ async def _keep_typing(chat, stop: asyncio.Event) -> None:
         except asyncio.TimeoutError:
             pass
 
+async def _process_student_question(message, user_id: int, question: str) -> None:
+    """Ветка «Студент»: своя база знаний, без кеша абитуриентов, уточнений и калькулятора."""
+    lang = _detect_lang(question)
+    t0 = time.monotonic()
+
+    if check_content(question):
+        await message.reply_text(
+            "I only answer questions about studying at HSE. Please keep it polite and on topic."
+            if lang == "en" else
+            "Я отвечаю только на вопросы об учёбе в ВШЭ. Пожалуйста, сформулируйте вопрос вежливо и по теме."
+        )
+        return
+
+    if not student_kb_available():
+        await message.reply_text(_student_intro(lang), parse_mode="HTML")
+        return
+
+    _stats["rag_calls"] += 1
+    log.info("Student RAG [lang=%s] user %d", lang, user_id)
+    stop_typing = asyncio.Event()
+    typing_task = asyncio.create_task(_keep_typing(message.chat, stop_typing))
+    meta: dict = {}
+    try:
+        answer, meta = await asyncio.get_running_loop().run_in_executor(
+            None, ask_student, question, lang
+        )
+    except Exception as e:
+        log.error("Student RAG error for user %d: %s", user_id, e)
+        answer = "Произошла техническая ошибка. Попробуйте позже."
+    finally:
+        stop_typing.set()
+        typing_task.cancel()
+
+    _add_to_history(user_id, "user", question)
+    _add_to_history(user_id, "assistant", answer)
+    sent = await _send_msg_with_vote(message, question, answer, "student", lang)
+    log_interaction(
+        user_id=user_id, question=question,
+        route="student", source="student",
+        answer=answer, sub_queries=[],
+        lang=lang, latency_ms=(time.monotonic() - t0) * 1000,
+        msg_id=sent.message_id,
+    )
+
 async def _process_question(message, user_id: int, question: str) -> None:
+    if _user_role.get(user_id) == "student":
+        await _process_student_question(message, user_id, question)
+        return
+
     lang = _detect_lang(question)
     citizenship = _user_citizenship.get(user_id, "")
     history = _get_history(user_id)
@@ -609,8 +803,20 @@ _DISCLAIMER_EN = (
     "or with the admissions office (abitur@hse.ru).</i>"
 )
 
+_STUDENT_DISCLAIMER = (
+    "\n\n<i>⚠️ Поступариум — это ИИ-консультант и может ошибаться. "
+    "Проверяйте важную информацию в учебном офисе или на hse.ru.</i>"
+)
+_STUDENT_DISCLAIMER_EN = (
+    "\n\n<i>⚠️ Postuparium is an AI assistant and can make mistakes. "
+    "Please verify important information with your study office or at hse.ru.</i>"
+)
+
 async def _send_msg_with_vote(message, question: str, answer: str, source: str, lang: str = "ru"):
-    disclaimer = _DISCLAIMER_EN if lang == "en" else _DISCLAIMER
+    if source == "student":
+        disclaimer = _STUDENT_DISCLAIMER_EN if lang == "en" else _STUDENT_DISCLAIMER
+    else:
+        disclaimer = _DISCLAIMER_EN if lang == "en" else _DISCLAIMER
     text = _to_html(answer)
     budget = _MAX_MSG_LEN - len(disclaimer)
     if len(text) > budget:
@@ -718,10 +924,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     log.info("Voice→text user %d: %s", user_id, question[:80])
 
-    if not _user_citizenship.get(user_id):
+    setup = _setup_prompt(user_id, "en" if tg_lang == "en" else "ru")
+    if setup:
         _pending_question[user_id] = question
-        cq, ckb = _citizenship_prompt("en" if tg_lang == "en" else "ru")
-        await update.message.reply_text(cq, parse_mode="HTML", reply_markup=ckb)
+        await update.message.reply_text(setup[0], parse_mode="HTML", reply_markup=setup[1])
         return
 
     await _process_question(update.message, user_id, question)
@@ -783,17 +989,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.chat.send_action(ChatAction.TYPING)
 
     if _is_greeting(question):
+        student = _user_role.get(user_id) == "student"
         if lang == "en":
-            await update.message.reply_text(
-                f"Hello, {user_name}! Ask me anything about admission to HSE Faculty of Computer Science."
-            )
+            topic = "studying at HSE" if student else "admission to HSE Faculty of Computer Science"
+            await update.message.reply_text(f"Hello, {user_name}! Ask me anything about {topic}.")
         else:
-            await update.message.reply_text(
-                f"Привет, {user_name}! Задавайте вопросы о поступлении на ФКН ВШЭ."
-            )
-        if not _user_citizenship.get(user_id):
-            cq, ckb = _citizenship_prompt(lang)
-            await update.message.reply_text(cq, parse_mode="HTML", reply_markup=ckb)
+            topic = "об учёбе в ВШЭ" if student else "о поступлении на ФКН ВШЭ"
+            await update.message.reply_text(f"Привет, {user_name}! Задавайте вопросы {topic}.")
+        setup = _setup_prompt(user_id, lang)
+        if setup:
+            await update.message.reply_text(setup[0], parse_mode="HTML", reply_markup=setup[1])
         return
 
     if _is_thanks(question):
@@ -803,10 +1008,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text("Рад помочь! Если появятся ещё вопросы — спрашивайте.")
         return
 
-    if not _user_citizenship.get(user_id):
+    setup = _setup_prompt(user_id, lang)
+    if setup:
         _pending_question[user_id] = question
-        cq, ckb = _citizenship_prompt(lang)
-        await update.message.reply_text(cq, parse_mode="HTML", reply_markup=ckb)
+        await update.message.reply_text(setup[0], parse_mode="HTML", reply_markup=setup[1])
         return
 
     calc = _calc_state.get(user_id)
@@ -822,7 +1027,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def post_init(application: Application) -> None:
     await application.bot.set_my_commands([
-        BotCommand("start", "Начать / выбор гражданства"),
+        BotCommand("start", "Начать / выбор вуза и роли"),
         BotCommand("reset", "Сбросить историю"),
         BotCommand("help", "Справка"),
     ])
@@ -836,6 +1041,7 @@ def main() -> None:
     log.info("Строим ChromaDB-индекс...")
     n = build_index()
     log.info("Индекс готов: %d чанков", n)
+    build_student_index()
 
     app = (
         Application.builder()
@@ -848,6 +1054,8 @@ def main() -> None:
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("reset", cmd_reset))
     app.add_handler(CommandHandler("admin", cmd_admin))
+    app.add_handler(CallbackQueryHandler(handle_university, pattern="^uni_"))
+    app.add_handler(CallbackQueryHandler(handle_role, pattern="^role_"))
     app.add_handler(CallbackQueryHandler(handle_citizenship, pattern="^citizen_"))
     app.add_handler(CallbackQueryHandler(handle_action, pattern="^action_"))
     app.add_handler(CallbackQueryHandler(handle_calc_step, pattern="^calc_"))
