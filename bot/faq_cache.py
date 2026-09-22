@@ -171,6 +171,28 @@ def _normalize(text: str) -> str:
 def _tokens(text: str) -> set[str]:
     return set(_normalize(text).split())
 
+# Минимальное число значимых (без стоп-слов) токенов, при котором запрос вообще
+# допускается к кешу. Однословные запросы вроде «ПАД»/«ПМИ» слишком неоднозначны:
+# раньше они точно совпадали с мусорным ключом и отдавали заведомо неверный
+# заготовленный ответ мимо RAG. Такие запросы теперь всегда идут в RAG/уточнение.
+_MIN_CACHE_TOKENS = 3
+
+_FALLBACK_MARKERS = (
+    "нет точной информации",
+    "нет информации по этому",
+    "в базе знаний нет",
+    "no information found",
+    "no information in the knowledge base",
+)
+
+def _is_fallback_answer(answer: str) -> bool:
+    """Ответ-заглушка «информации нет» — кешировать его бессмысленно и вредно."""
+    a = answer.lower()
+    return any(m in a for m in _FALLBACK_MARKERS)
+
+def _too_short(norm: str) -> bool:
+    return len(norm.split()) < _MIN_CACHE_TOKENS
+
 _NORM_TO_ANSWER: dict[str, str] = {}
 _TOKEN_INDEX: list[tuple[set[str], str]] = []
 
@@ -221,6 +243,17 @@ def add_to_dynamic_cache(question: str, answer: str) -> None:
     norm = _normalize(question)
     if not norm or norm in _NORM_TO_ANSWER or norm in _DYNAMIC_NORM:
         return
+    # Строгие условия попадания в кеш: запрос должен быть достаточно конкретным,
+    # не находиться в блэклисте, а ответ — содержательным (не заглушкой).
+    if norm in _BLACKLIST:
+        log.info("Не кеширую (в блэклисте): %r", norm)
+        return
+    if _too_short(norm):
+        log.info("Не кеширую (слишком короткий запрос, <%d токенов): %r", _MIN_CACHE_TOKENS, norm)
+        return
+    if _is_fallback_answer(answer):
+        log.info("Не кеширую (ответ-заглушка): %r", norm)
+        return
     _DYNAMIC_NORM[norm] = answer
     _save_cache()
 
@@ -248,6 +281,11 @@ def lookup(question: str) -> tuple[str | None, str]:
         return None, "rag"
 
     if norm in _BLACKLIST:
+        return None, "rag"
+
+    # Слишком короткий/неоднозначный запрос (напр. «ПАД») — не отдаём из кеша,
+    # пусть отрабатывает RAG или уточняющий вопрос.
+    if _too_short(norm):
         return None, "rag"
 
     if norm in _NORM_TO_ANSWER:
