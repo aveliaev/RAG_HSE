@@ -1,3 +1,4 @@
+import io
 import re
 import json
 import asyncio
@@ -9,7 +10,7 @@ from pathlib import Path
 import time
 
 from telegram import (
-    Update, BotCommand,
+    Update, BotCommand, InputFile,
     InlineKeyboardButton, InlineKeyboardMarkup,
     InlineQueryResultArticle, InputTextMessageContent, InlineQueryResultsButton,
 )
@@ -23,6 +24,7 @@ from telegram.ext import (
     ContextTypes,
 )
 from telegram.constants import ChatAction
+from telegram.error import BadRequest
 
 from config import (
     TELEGRAM_TOKEN, MAX_HISTORY_PAIRS,
@@ -37,7 +39,7 @@ from agentic_rag import agentic_ask
 from student_rag import build_student_index, student_kb_available, ask_student
 from privacy import (
     hash_uid, redact_pii, has_consent, give_consent, delete_user_data, prune_old_logs,
-    CONSENT_TEXT, CONSENT_TEXT_EN, privacy_text,
+    CONSENT_TEXT, CONSENT_TEXT_EN, privacy_document, privacy_date,
 )
 
 
@@ -428,8 +430,13 @@ async def handle_consent(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     lang = "en" if (query.from_user.language_code or "")[:2].lower() == "en" else "ru"
 
     if query.data == "consent_more":
-        _, kb = _consent_prompt(lang)
-        await query.edit_message_text(privacy_text(lang), parse_mode="HTML", reply_markup=kb)
+        # Новым сообщением, а не правкой старого: правка выше по чату незаметна,
+        # а повторное нажатие давало ошибку Telegram «Message is not modified».
+        # Кнопки остаются только под новым сообщением.
+        await query.edit_message_reply_markup(reply_markup=None)
+        accept = InlineKeyboardMarkup([[InlineKeyboardButton(
+            "✅ Accept" if lang == "en" else "✅ Принимаю", callback_data="consent_yes")]])
+        await _send_privacy_document(query.message, lang, reply_markup=accept)
         return
 
     give_consent(user_id)
@@ -438,9 +445,18 @@ async def handle_consent(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     done = "✅ Thank you!" if lang == "en" else "✅ Спасибо!"
     await query.edit_message_text(f"{done}\n\n{text}", parse_mode="HTML", reply_markup=kb)
 
+async def _send_privacy_document(message, lang: str, reply_markup=None) -> None:
+    filename, content = privacy_document(lang)
+    caption = (f"📄 Privacy policy, in Russian (version of {privacy_date('en')})" if lang == "en"
+               else f"📄 Политика обработки персональных данных (редакция от {privacy_date('ru')})")
+    await message.reply_document(
+        document=InputFile(io.BytesIO(content), filename=filename),
+        caption=caption, reply_markup=reply_markup,
+    )
+
 async def cmd_privacy(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lang = "en" if (update.effective_user.language_code or "")[:2].lower() == "en" else "ru"
-    await update.message.reply_text(privacy_text(lang), parse_mode="HTML")
+    await _send_privacy_document(update.message, lang)
 
 async def cmd_deletedata(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lang = "en" if (update.effective_user.language_code or "")[:2].lower() == "en" else "ru"
@@ -1119,6 +1135,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     await _process_question(update.message, user_id, question)
 
+async def handle_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    err = context.error
+    # Повторное нажатие на ту же кнопку — Telegram отказывается «менять» сообщение на такое же
+    if isinstance(err, BadRequest) and "message is not modified" in str(err).lower():
+        return
+    log.error("Ошибка при обработке апдейта: %s", err, exc_info=err)
+
 async def post_init(application: Application) -> None:
     await application.bot.set_my_commands([
         BotCommand("start", "Начать / выбор вуза и роли"),
@@ -1164,6 +1187,7 @@ def main() -> None:
     app.add_handler(InlineQueryHandler(handle_inline))
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_error_handler(handle_error)
 
     if WEBHOOK_URL:
         log.info("Webhook: %s", WEBHOOK_URL)

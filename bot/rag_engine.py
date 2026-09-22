@@ -674,6 +674,8 @@ def yandex_complete(
     headers = {
         "Authorization": f"Api-Key {YANDEX_API_KEY}",
         "x-folder-id": YANDEX_FOLDER_ID,
+        # не разрешаем Яндексу сохранять запросы пользователей (см. политику ПДн)
+        "x-data-logging-enabled": "false",
     }
     resp = requests.post(_YANDEX_URL, json=payload, headers=headers, timeout=30)
     resp.raise_for_status()

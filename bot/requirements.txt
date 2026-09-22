@@ -8,3 +8,4 @@ plotly>=5.20.0
 pandas>=2.0.0
 rouge-score>=0.1.2
 aiohttp>=3.9.0
+fpdf2>=2.7

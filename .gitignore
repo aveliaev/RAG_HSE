@@ -40,3 +40,9 @@ vpn/*.ovpn
 
 # Согласия пользователей на обработку данных
 bot/consents.json
+
+# Логи бота — содержат вопросы пользователей
+bot/bot_events.jsonl
+bot/bot_votes.jsonl
+bot/disliked.log
+bot/quarantine.jsonl

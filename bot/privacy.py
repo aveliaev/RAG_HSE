@@ -4,9 +4,10 @@ import json
 import logging
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from config import (
-    LOG_SALT, LOG_RETENTION_DAYS, PRIVACY_CONTACT, CONSENTS_FILE,
+    LOG_SALT, LOG_RETENTION_DAYS, PRIVACY_CONTACT, PRIVACY_OPERATOR, CONSENTS_FILE,
     EVENTS_LOG, VOTES_LOG, USE_YANDEX,
 )
 
@@ -158,41 +159,177 @@ CONSENT_TEXT_EN = (
 )
 
 
-def privacy_text(lang: str = "ru") -> str:
-    llm_ru = ("YandexGPT и Yandex SpeechKit (Яндекс Облако, серверы в РФ)" if USE_YANDEX
-              else "Groq (серверы в США — трансграничная передача)")
-    llm_en = ("YandexGPT and Yandex SpeechKit (Yandex Cloud, servers in Russia)" if USE_YANDEX
-              else "Groq (servers in the USA)")
-    retention_ru = f"{LOG_RETENTION_DAYS} дней" if LOG_RETENTION_DAYS > 0 else "до удаления по запросу"
-    retention_en = f"{LOG_RETENTION_DAYS} days" if LOG_RETENTION_DAYS > 0 else "until you request deletion"
+_MONTHS_RU = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля",
+              "августа", "сентября", "октября", "ноября", "декабря"]
+
+
+def privacy_date(lang: str = "ru") -> str:
+    """Дата редакции политики (из PRIVACY_VERSION) в человекочитаемом виде."""
+    d = datetime.strptime(PRIVACY_VERSION, "%Y-%m-%d")
     if lang == "en":
-        contact = f"\n\n<b>Contact:</b> {PRIVACY_CONTACT}" if PRIVACY_CONTACT else ""
-        return (
-            "🔒 <b>Privacy policy</b>\n\n"
-            "<b>What we process:</b> your messages (text and voice), your choices in the bot "
-            "(university, role, citizenship) and your answer ratings.\n\n"
-            "<b>Why:</b> to answer your questions and improve answer quality.\n\n"
-            f"<b>Who processes it:</b> {llm_en}; Telegram delivers messages.\n\n"
-            "<b>How it is stored:</b> your Telegram ID is replaced with a pseudonymous hash; "
-            "phone numbers, emails, passport and card numbers are masked in logs. "
-            "Voice messages are not stored. Your name and username are not stored.\n\n"
-            f"<b>Retention:</b> {retention_en}.\n\n"
-            "<b>Your rights:</b> /deletedata deletes your questions, answers and ratings; "
-            "/privacy shows this notice."
-            f"{contact}"
+        return d.strftime("%d %B %Y")
+    return f"{d.day} {_MONTHS_RU[d.month - 1]} {d.year} г."
+
+
+# --- Документ политики (PDF) ---
+_POLICY_TEMPLATE = Path(__file__).parent / "legal" / "privacy_policy.md"
+
+# Шрифты с кириллицей: DejaVu ставится в Docker-образ, Arial — есть на macOS
+_FONT_CANDIDATES = [
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+]
+
+
+def _policy_values() -> dict[str, str]:
+    if USE_YANDEX:
+        processors = (
+            "- ООО «Яндекс.Облако» (Yandex Cloud) — размещение Бота на серверах в Российской Федерации, "
+            "формирование ответов языковой моделью YandexGPT и распознавание голосовых сообщений "
+            "(Yandex SpeechKit); сохранение запросов на стороне провайдера отключено;\n"
         )
-    contact = f"\n\n<b>Контакт:</b> {PRIVACY_CONTACT}" if PRIVACY_CONTACT else ""
-    return (
-        "🔒 <b>Политика обработки персональных данных</b>\n\n"
-        "<b>Что обрабатывается:</b> ваши сообщения (текст и голосовые), выбор в боте "
-        "(университет, роль, гражданство) и оценки ответов.\n\n"
-        "<b>Зачем:</b> чтобы отвечать на вопросы и улучшать качество ответов.\n\n"
-        f"<b>Кто обрабатывает:</b> {llm_ru}; доставку сообщений обеспечивает Telegram.\n\n"
-        "<b>Как хранится:</b> вместо Telegram ID в логах — обезличенный хеш; телефоны, почта, "
-        "номера паспортов и карт в логах маскируются. Голосовые сообщения не сохраняются. "
-        "Имя и username не сохраняются.\n\n"
-        f"<b>Срок хранения:</b> {retention_ru}.\n\n"
-        "<b>Ваши права:</b> /deletedata — удалить ваши вопросы, ответы и оценки; "
-        "/privacy — это уведомление."
-        f"{contact}"
+        cross_border = (
+            "9.1. Оператор не осуществляет трансграничную передачу персональных данных для формирования "
+            "ответов: языковая модель и распознавание речи работают на серверах в Российской Федерации.\n\n"
+        )
+    else:
+        processors = (
+            "- ООО «Яндекс.Облако» (Yandex Cloud) — размещение Бота на серверах в Российской Федерации;\n"
+            "- Groq, Inc. (США) — формирование ответов языковой моделью;\n"
+        )
+        cross_border = (
+            "9.1. Для формирования ответов текст вопроса пользователя передаётся сервису Groq, Inc. (США). "
+            "Трансграничная передача осуществляется на основании согласия пользователя и только в объёме, "
+            "необходимом для формирования ответа; идентификатор пользователя при этом не передаётся.\n\n"
+        )
+    processors += (
+        "- мессенджер Telegram — доставка сообщений между пользователем и Ботом;\n"
+        "- при необходимости — провайдер защищённого сетевого подключения: только передача "
+        "зашифрованного (TLS) трафика между сервером Бота и Telegram, без доступа к содержимому сообщений."
     )
+    cross_border += (
+        "9.2. Сообщения между пользователем и Ботом доставляются через мессенджер Telegram, серверы "
+        "которого могут располагаться за пределами Российской Федерации. Пользователь самостоятельно "
+        "выбирает Telegram как способ связи с Ботом и использует его на условиях политики "
+        "конфиденциальности Telegram."
+    )
+    retention = (f"{LOG_RETENTION_DAYS} дней с даты записи" if LOG_RETENTION_DAYS > 0
+                 else "до удаления по запросу пользователя")
+    return {
+        "date": privacy_date("ru"),
+        "operator": f"{PRIVACY_OPERATOR} (далее — Оператор)" if PRIVACY_OPERATOR
+                    else "администратор (владелец) Telegram-бота «Поступариум» (далее — Оператор)",
+        "contact": PRIVACY_CONTACT or "через Бот — команды /privacy и /deletedata",
+        "hosting": "Yandex Cloud, регион ru-central1",
+        "processors": processors,
+        "cross_border": cross_border,
+        "retention": retention,
+    }
+
+
+def policy_markdown() -> str:
+    text = _POLICY_TEMPLATE.read_text(encoding="utf-8")
+    for key, value in _policy_values().items():
+        text = text.replace("{{" + key + "}}", value)
+    return text
+
+
+def _render_pdf(md: str) -> bytes | None:
+    try:
+        from fpdf import FPDF
+    except ImportError:
+        log.warning("fpdf2 не установлен — политика будет отправлена текстом")
+        return None
+    fonts = next(((r, b) for r, b in _FONT_CANDIDATES if Path(r).exists() and Path(b).exists()), None)
+    if not fonts:
+        log.warning("Не найден шрифт с кириллицей — политика будет отправлена текстом")
+        return None
+
+    title_lines = []
+    date_line = f"Редакция от {privacy_date('ru')}"
+
+    class PolicyPDF(FPDF):
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Main", size=8)
+            self.set_text_color(120, 120, 120)
+            self.cell(0, 10, f"Политика обработки персональных данных · {date_line} · "
+                             f"стр. {self.page_no()} из {{nb}}", align="C")
+
+    pdf = PolicyPDF(format="A4")
+    pdf.set_title("Политика обработки персональных данных — Поступариум")
+    pdf.set_author(PRIVACY_OPERATOR or "Поступариум")
+    pdf.add_font("Main", "", fonts[0])
+    pdf.add_font("Main", "B", fonts[1])
+    pdf.set_margins(20, 18, 20)
+    pdf.set_auto_page_break(True, margin=20)
+    pdf.add_page()
+    width = pdf.w - pdf.l_margin - pdf.r_margin
+
+    lines = md.splitlines()
+    i = 0
+    # Шапка: «# Заголовок» и следующие за ним строки до первого раздела
+    while i < len(lines) and not lines[i].startswith("## "):
+        line = lines[i].strip()
+        if line.startswith("# "):
+            title_lines.append(line[2:])
+        elif line:
+            title_lines.append(line)
+        i += 1
+    pdf.set_font("Main", "B", 17)
+    pdf.multi_cell(width, 9, title_lines[0], align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+    pdf.set_font("Main", "", 11)
+    pdf.set_text_color(90, 90, 90)
+    for line in title_lines[1:]:
+        pdf.multi_cell(width, 6, line, align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(4)
+    pdf.set_draw_color(180, 180, 180)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.ln(5)
+
+    for line in lines[i:]:
+        line = line.rstrip()
+        if not line:
+            pdf.ln(1.5)
+        elif line.startswith("## "):
+            if pdf.get_y() > pdf.h - 45:  # заголовок раздела не оставляем одиноко внизу страницы
+                pdf.add_page()
+            pdf.ln(3)
+            pdf.set_font("Main", "B", 12.5)
+            pdf.multi_cell(width, 7, line[3:], new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(1.5)
+        elif line.startswith("- "):
+            pdf.set_font("Main", "", 10.5)
+            if pdf.get_y() + 12 > pdf.page_break_trigger:  # маркер и первая строка — на одной странице
+                pdf.add_page()
+            y = pdf.get_y()
+            pdf.set_x(pdf.l_margin + 3)
+            pdf.cell(4, 5.6, "•")
+            pdf.set_xy(pdf.l_margin + 8, y)
+            pdf.multi_cell(width - 8, 5.6, line[2:], markdown=True, align="J", new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(0.8)
+        else:
+            pdf.set_font("Main", "", 10.5)
+            pdf.multi_cell(width, 5.6, line, markdown=True, align="J", new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(0.8)
+    return bytes(pdf.output())
+
+
+_document_cache: dict[str, tuple[str, bytes]] = {}
+
+
+def privacy_document(lang: str = "ru") -> tuple[str, bytes]:
+    """Политика для отправки в Telegram: (имя файла, содержимое). PDF, а если его не собрать — txt.
+    Документ на русском (как требует 152-ФЗ); для англоязычных пользователей меняется только подпись."""
+    if "doc" not in _document_cache:
+        md = policy_markdown()
+        pdf = _render_pdf(md)
+        if pdf:
+            _document_cache["doc"] = (f"Политика_ПДн_Поступариум_{PRIVACY_VERSION}.pdf", pdf)
+        else:
+            plain = re.sub(r"\*\*|^#+ ", "", md, flags=re.M)
+            _document_cache["doc"] = (f"Политика_ПДн_Поступариум_{PRIVACY_VERSION}.txt",
+                                      ("\ufeff" + plain).encode("utf-8"))
+    return _document_cache["doc"]

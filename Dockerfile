@@ -17,6 +17,10 @@ RUN python -c "from sentence_transformers import SentenceTransformer, CrossEncod
 SentenceTransformer('intfloat/multilingual-e5-base'); \
 CrossEncoder('cross-encoder/mmarco-mMiniLMv2-L12-H384-v1')"
 
+# Шрифт с кириллицей для PDF с политикой персональных данных
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY dataset/ dataset/
 COPY bot/ bot/
 COPY docker-entrypoint.sh /docker-entrypoint.sh

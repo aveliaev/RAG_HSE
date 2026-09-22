@@ -83,4 +83,6 @@ LOG_SALT = os.getenv("LOG_SALT", "")
 LOG_RETENTION_DAYS = int(os.getenv("LOG_RETENTION_DAYS", "180"))
 # Контакт для вопросов о персональных данных (показывается в /privacy)
 PRIVACY_CONTACT = os.getenv("PRIVACY_CONTACT", "")
+# Кто оператор персональных данных (ФИО или организация) — указывается в политике
+PRIVACY_OPERATOR = os.getenv("PRIVACY_OPERATOR", "")
 CONSENTS_FILE = DATA_DIR / "consents.json"

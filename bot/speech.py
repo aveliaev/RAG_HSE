@@ -23,6 +23,8 @@ async def transcribe_ogg(audio_bytes: bytes, lang: str = "ru-RU") -> str | None:
     headers = {
         "Authorization": f"Api-Key {YANDEX_API_KEY}",
         "Content-Type": "audio/ogg;codecs=opus",
+        # не разрешаем Яндексу сохранять голосовые пользователей (см. политику ПДн)
+        "x-data-logging-enabled": "false",
     }
 
     try:
