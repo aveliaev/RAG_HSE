@@ -28,3 +28,6 @@ build/
 .vscode/
 *.swp
 *.swo
+
+# Индекс ChromaDB — пересобирается из dataset/
+bot/chroma_db/
