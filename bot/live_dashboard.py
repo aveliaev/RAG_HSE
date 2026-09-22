@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -8,8 +9,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-EVENTS_LOG = Path(__file__).parent / "bot_events.jsonl"
-VOTES_LOG = Path(__file__).parent / "bot_votes.jsonl"
+DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).parent))
+EVENTS_LOG = DATA_DIR / "bot_events.jsonl"
+VOTES_LOG = DATA_DIR / "bot_votes.jsonl"
 
 st.set_page_config(
     page_title="Live Dashboard — ФКН бот",

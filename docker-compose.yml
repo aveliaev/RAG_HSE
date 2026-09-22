@@ -1,0 +1,21 @@
+services:
+  bot:
+    build: .
+    env_file: bot/.env
+    volumes:
+      - bot-data:/data
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    command: ["streamlit", "run", "live_dashboard.py",
+              "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+    volumes:
+      - bot-data:/data:ro
+    ports:
+      # только localhost: дашборд без пароля, смотреть через ssh -L 8501:localhost:8501
+      - "127.0.0.1:8501:8501"
+    restart: unless-stopped
+
+volumes:
+  bot-data:

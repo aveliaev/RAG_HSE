@@ -5,6 +5,10 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
 
 DOCS_DIR = Path(__file__).parent.parent / "dataset"
 
+# Куда бот пишет изменяемые данные (кеш, логи, индекс). На сервере в Docker
+# задаётся через DATA_DIR и монтируется как volume, чтобы переживать пересборку.
+DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).parent))
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
@@ -50,13 +54,13 @@ RELEVANCE_MIN_SCORE = float(os.getenv("RELEVANCE_MIN_SCORE", "-4.0"))
 
 MAX_HISTORY_PAIRS = 5
 
-CACHE_FILE = Path(__file__).parent / "dynamic_cache.json"
+CACHE_FILE = DATA_DIR / "dynamic_cache.json"
 
-DISLIKE_LOG = Path(__file__).parent / "disliked.log"
+DISLIKE_LOG = DATA_DIR / "disliked.log"
 
-QUARANTINE_FILE = Path(__file__).parent / "quarantine.jsonl"
+QUARANTINE_FILE = DATA_DIR / "quarantine.jsonl"
 
-CHROMA_DIR = Path(__file__).parent / "chroma_db"
+CHROMA_DIR = DATA_DIR / "chroma_db"
 
 ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID", "0"))
 
@@ -66,5 +70,5 @@ RATE_LIMIT_WINDOW = 60
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "")
 WEBHOOK_PORT = int(os.getenv("PORT", "8443"))
 
-EVENTS_LOG = Path(__file__).parent / "bot_events.jsonl"
-VOTES_LOG = Path(__file__).parent / "bot_votes.jsonl"
+EVENTS_LOG = DATA_DIR / "bot_events.jsonl"
+VOTES_LOG = DATA_DIR / "bot_votes.jsonl"

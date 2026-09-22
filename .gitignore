@@ -31,3 +31,6 @@ build/
 
 # Индекс ChromaDB — пересобирается из dataset/
 bot/chroma_db/
+
+# Секреты
+.env

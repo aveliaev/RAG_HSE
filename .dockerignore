@@ -1,0 +1,15 @@
+.git
+.claude
+**/.DS_Store
+**/__pycache__
+**/venv
+**/.env
+bot/chroma_db
+bot/*.jsonl
+bot/*.log
+Latex
+hse_ba
+photo
+results
+test
+*.pdf
